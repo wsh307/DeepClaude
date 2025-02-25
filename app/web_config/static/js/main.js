@@ -1,0 +1,192 @@
+document.addEventListener('DOMContentLoaded', function() {
+    // 全局变量
+    const configData = {};
+    const apiPath = window.location.pathname;
+    const apiBasePath = `${apiPath}/api`;
+    
+    // DOM 元素
+    const saveBtn = document.getElementById('save-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const messageBox = document.getElementById('message-box');
+    const navLinks = document.querySelectorAll('nav a');
+    const sections = document.querySelectorAll('.config-section');
+    const togglePasswordBtns = document.querySelectorAll('.toggle-password');
+    
+    // 初始化
+    fetchConfig();
+    
+    // 事件监听
+    saveBtn.addEventListener('click', saveConfig);
+    resetBtn.addEventListener('click', resetForm);
+    logoutBtn.addEventListener('click', logout);
+    
+    // 导航切换
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = this.getAttribute('href').substring(1);
+            
+            // 更新导航状态
+            navLinks.forEach(el => el.classList.remove('active'));
+            this.classList.add('active');
+            
+            // 更新内容区域
+            sections.forEach(section => {
+                if (section.id === target) {
+                    section.classList.remove('hidden');
+                } else {
+                    section.classList.add('hidden');
+                }
+            });
+        });
+    });
+    
+    // 密码显示/隐藏切换
+    togglePasswordBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const input = this.previousElementSibling;
+            if (input.type === 'password') {
+                input.type = 'text';
+                this.textContent = '隐藏';
+            } else {
+                input.type = 'password';
+                this.textContent = '显示';
+            }
+        });
+    });
+    
+    // 获取配置
+    async function fetchConfig() {
+        try {
+            const response = await fetch(`${apiBasePath}/config`);
+            if (!response.ok) {
+                throw new Error('获取配置失败');
+            }
+            
+            const data = await response.json();
+            Object.assign(configData, data);
+            
+            // 填充表单
+            populateForm(data);
+        } catch (error) {
+            showMessage(error.message, 'error');
+        }
+    }
+    
+    // 填充表单
+    function populateForm(data) {
+        // API 密钥
+        document.getElementById('allow-api-key').value = data.api_keys?.allow_api_key || '';
+        document.getElementById('deepseek-api-key').value = data.api_keys?.deepseek || '';
+        document.getElementById('claude-api-key').value = data.api_keys?.claude || '';
+        document.getElementById('openai-composite-api-key').value = data.api_keys?.openai_composite || '';
+        
+        // 端点
+        document.getElementById('deepseek-endpoint').value = data.endpoints?.deepseek || '';
+        document.getElementById('claude-endpoint').value = data.endpoints?.claude || '';
+        document.getElementById('openai-composite-endpoint').value = data.endpoints?.openai_composite || '';
+        
+        // 模型
+        document.getElementById('deepseek-model').value = data.models?.deepseek || '';
+        document.getElementById('claude-model').value = data.models?.claude || '';
+        document.getElementById('openai-composite-model').value = data.models?.openai_composite || '';
+        document.getElementById('claude-provider').value = data.providers?.claude || 'anthropic';
+        
+        // 选项
+        document.getElementById('allow-origins').value = data.options?.allow_origins || '*';
+        document.getElementById('is-origin-reasoning').value = data.options?.is_origin_reasoning === true ? 'true' : 'false';
+        document.getElementById('log-level').value = data.options?.log_level || 'INFO';
+    }
+    
+    // 收集表单数据
+    function collectFormData() {
+        const data = {
+            api_keys: {
+                allow_api_key: document.getElementById('allow-api-key').value.trim(),
+                deepseek: document.getElementById('deepseek-api-key').value.trim(),
+                claude: document.getElementById('claude-api-key').value.trim(),
+                openai_composite: document.getElementById('openai-composite-api-key').value.trim()
+            },
+            endpoints: {
+                deepseek: document.getElementById('deepseek-endpoint').value.trim(),
+                claude: document.getElementById('claude-endpoint').value.trim(),
+                openai_composite: document.getElementById('openai-composite-endpoint').value.trim()
+            },
+            models: {
+                deepseek: document.getElementById('deepseek-model').value.trim(),
+                claude: document.getElementById('claude-model').value.trim(),
+                openai_composite: document.getElementById('openai-composite-model').value.trim()
+            },
+            providers: {
+                claude: document.getElementById('claude-provider').value
+            },
+            options: {
+                allow_origins: document.getElementById('allow-origins').value.trim(),
+                is_origin_reasoning: document.getElementById('is-origin-reasoning').value === 'true',
+                log_level: document.getElementById('log-level').value
+            }
+        };
+        
+        return data;
+    }
+    
+    // 保存配置
+    async function saveConfig() {
+        try {
+            const formData = collectFormData();
+            
+            const response = await fetch(`${apiBasePath}/config`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || '保存配置失败');
+            }
+            
+            const result = await response.json();
+            showMessage('配置保存成功！', 'success');
+            
+            // 更新本地配置数据
+            Object.assign(configData, formData);
+        } catch (error) {
+            showMessage(error.message, 'error');
+        }
+    }
+    
+    // 重置表单
+    function resetForm() {
+        populateForm(configData);
+        showMessage('表单已重置为当前配置', 'info');
+    }
+    
+    // 退出登录
+    function logout() {
+        // 清除基本认证缓存的简单方法是重定向到一个错误的用户名/密码
+        fetch(window.location.href, {
+            headers: {
+                'Authorization': 'Basic ' + btoa('logout:logout')
+            }
+        })
+        .then(() => {
+            window.location.reload();
+        });
+    }
+    
+    // 显示消息
+    function showMessage(message, type = 'info') {
+        messageBox.textContent = message;
+        messageBox.className = type;
+        messageBox.classList.remove('hidden');
+        
+        // 5秒后自动隐藏
+        setTimeout(() => {
+            messageBox.classList.add('hidden');
+        }, 5000);
+    }
+}); 

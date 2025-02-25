@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeepClaude 配置管理</title>
+    <style>
+      :root {
+        --primary-color: #4a6fa5;
+        --secondary-color: #6b93d6;
+        --background-color: #f5f7f9;
+        --card-background: #ffffff;
+        --text-color: #333333;
+        --border-color: #e0e0e0;
+        --success-color: #48bb78;
+        --error-color: #e53e3e;
+        --warning-color: #ed8936;
+        --info-color: #4299e1;
+        --sidebar-width: 220px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, Arial, sans-serif;
+        background-color: var(--background-color);
+        color: var(--text-color);
+        line-height: 1.6;
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* 侧边栏样式 */
+      .sidebar {
+        width: var(--sidebar-width);
+        background-color: #2c3e50;
+        color: #ecf0f1;
+        position: fixed;
+        height: 100vh;
+        left: 0;
+        top: 0;
+        overflow-y: auto;
+        transition: all 0.3s;
+        z-index: 10;
+      }
+
+      .sidebar-header {
+        padding: 20px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .sidebar-header h2 {
+        color: white;
+        font-size: 18px;
+        margin: 0;
+      }
+
+      .sidebar-header .logo {
+        margin-bottom: 10px;
+        font-size: 24px;
+        color: #3498db;
+      }
+
+      .sidebar-menu {
+        padding: 20px 0;
+      }
+
+      .menu-item {
+        padding: 12px 20px;
+        display: block;
+        text-decoration: none;
+        color: #bdc3c7;
+        transition: all 0.3s;
+        font-size: 14px;
+        position: relative;
+      }
+
+      .menu-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+      }
+
+      .menu-item.active {
+        background-color: rgba(52, 152, 219, 0.2);
+        color: white;
+        border-left: 4px solid #3498db;
+      }
+
+      .menu-item i {
+        margin-right: 10px;
+        width: 20px;
+        text-align: center;
+      }
+
+      .sidebar-footer {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        padding: 15px;
+        text-align: center;
+        font-size: 12px;
+        color: #7f8c8d;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      /* 主内容区域 */
+      .main-content {
+        flex: 1;
+        margin-left: var(--sidebar-width);
+        padding: 20px;
+        transition: all 0.3s;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .header-title h1 {
+        font-size: 24px;
+        color: var(--primary-color);
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+      }
+
+      .user-name {
+        margin-right: 15px;
+        font-weight: 500;
+      }
+
+      .logout-btn {
+        padding: 8px 15px;
+        background-color: #f1f1f1;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 14px;
+      }
+
+      .logout-btn:hover {
+        background-color: #e0e0e0;
+      }
+
+      /* 配置卡片样式 */
+      .config-card {
+        background-color: var(--card-background);
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        margin-bottom: 25px;
+        padding: 20px;
+        transition: all 0.3s;
+      }
+
+      .config-card:hover {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .card-header {
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .card-header h2 {
+        font-size: 18px;
+        color: var(--primary-color);
+      }
+
+      .card-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+      }
+      .card-content-y {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+      }
+      /* 表单元素样式 */
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        font-size: 14px;
+      }
+
+      .form-group input[type="text"],
+      .form-group input[type="password"],
+      .form-group input[type="number"],
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 5px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        border-color: var(--primary-color);
+        outline: none;
+      }
+
+      .form-group small {
+        display: block;
+        margin-top: 5px;
+        color: #666;
+        font-size: 12px;
+      }
+
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 30px;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.3s;
+      }
+
+      .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background-color: #3a5985;
+      }
+
+      .btn-secondary {
+        background-color: #f1f1f1;
+        color: #333;
+      }
+
+      .btn-secondary:hover {
+        background-color: #e0e0e0;
+      }
+
+      /* 待修改区域和密码字段 */
+      .modified {
+        border-left: 3px solid var(--warning-color) !important;
+      }
+
+      .password-field {
+        position: relative;
+      }
+
+      .toggle-password {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #666;
+        font-size: 14px;
+      }
+
+      /* 消息提示框 */
+      .message-box {
+        padding: 12px 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        display: none;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 100;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        max-width: 400px;
+      }
+
+      .message-box.show {
+        display: block;
+        animation: fadeInDown 0.5s;
+      }
+
+      .message-box.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .message-box.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      .message-box.info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 1024px) {
+        .card-content {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          width: 60px;
+          overflow: visible;
+        }
+
+        .sidebar-header h2 {
+          display: none;
+        }
+
+        .menu-item span {
+          display: none;
+        }
+
+        .sidebar-footer {
+          display: none;
+        }
+
+        .main-content {
+          margin-left: 60px;
+        }
+
+        .card-content {
+          grid-template-columns: 1fr;
+        }
+
+        .header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        .user-info {
+          width: 100%;
+          justify-content: space-between;
+        }
+      }
+
+      /* 隐藏不活动的部分 */
+      .section-hidden {
+        display: none;
+      }
+
+      .mapping-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .mapping-table th,
+      .mapping-table td {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .mapping-table th {
+        font-weight: 600;
+        background-color: rgba(0, 0, 0, 0.03);
+      }
+
+      .add-mapping-form {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-color);
+      }
+
+      .form-subtitle {
+        font-size: 16px;
+        margin-bottom: 15px;
+      }
+
+      .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: flex-end;
+      }
+
+      .form-row .form-group {
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .form-row .btn-container {
+        flex: 0 0 auto;
+        align-self: flex-end;
+      }
+
+      .delete-btn {
+        background-color: var(--error-color);
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .delete-btn:hover {
+        background-color: #c53030;
+      }
+
+      /* 模态窗口样式 */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+
+      .modal {
+        background-color: var(--card-background);
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        padding: 25px;
+        width: 100%;
+        max-width: 500px;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .modal-header h3 {
+        margin: 0;
+        color: var(--primary-color);
+      }
+
+      .close-modal {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: #999;
+      }
+
+      .modal-body {
+        margin-bottom: 20px;
+      }
+
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo"><i class="fas fa-brain"></i></div>
+        <h2>DeepClaude</h2>
+      </div>
+
+      <div class="sidebar-menu">
+        <a href="#api-keys" class="menu-item active" data-section="api-keys">
+          <i class="fas fa-key"></i>
+          <span>API 密钥</span>
+        </a>
+        <a href="#endpoints" class="menu-item" data-section="endpoints">
+          <i class="fas fa-server"></i>
+          <span>服务端点</span>
+        </a>
+        <a href="#models" class="menu-item" data-section="models">
+          <i class="fas fa-robot"></i>
+          <span>模型配置</span>
+        </a>
+        <a
+          href="#model-mappings"
+          class="menu-item"
+          data-section="model-mappings"
+        >
+          <i class="fas fa-exchange-alt"></i>
+          <span>模型映射</span>
+        </a>
+        <a href="#options" class="menu-item" data-section="options">
+          <i class="fas fa-cog"></i>
+          <span>全局选项</span>
+        </a>
+        <a href="#system" class="menu-item" data-section="system">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>系统状态</span>
+        </a>
+      </div>
+
+      <div class="sidebar-footer">DeepClaude © 2024</div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="main-content">
+      <div class="header">
+        <div class="header-title">
+          <h1>配置管理</h1>
+        </div>
+
+        <div class="user-info">
+          <div class="user-name">{{ username }}</div>
+          <button id="logout-btn" class="logout-btn">
+            <i class="fas fa-sign-out-alt"></i> 退出
+          </button>
+        </div>
+      </div>
+
+      <div id="message-box" class="message-box">消息提示</div>
+
+      <!-- API 密钥配置 -->
+      <div id="api-keys-section" class="config-section">
+        <div class="config-card">
+          <div class="card-header">
+            <h2><i class="fas fa-key"></i> API 密钥配置</h2>
+          </div>
+
+          <div class="card-content">
+            <div class="form-group password-field">
+              <label for="allow-api-key">客户端 API 密钥</label>
+              <input
+                type="password"
+                id="allow-api-key"
+                name="allow_api_key"
+                placeholder="Bearer 认证所需的 API 密钥"
+              />
+              <button
+                type="button"
+                class="toggle-password"
+                data-target="allow-api-key"
+              >
+                <i class="fas fa-eye"></i>
+              </button>
+              <small
+                >客户端请求时通过 Bearer Authentication 使用的 API 密钥</small
+              >
+            </div>
+
+            <div class="form-group password-field">
+              <label for="deepseek-api-key">DeepSeek API 密钥</label>
+              <input
+                type="password"
+                id="deepseek-api-key"
+                name="deepseek"
+                placeholder="DeepSeek API 密钥"
+              />
+              <button
+                type="button"
+                class="toggle-password"
+                data-target="deepseek-api-key"
+              >
+                <i class="fas fa-eye"></i>
+              </button>
+              <small>用于访问 DeepSeek API 的密钥</small>
+            </div>
+
+            <div class="form-group password-field">
+              <label for="claude-api-key">Claude API 密钥</label>
+              <input
+                type="password"
+                id="claude-api-key"
+                name="claude"
+                placeholder="Claude API 密钥"
+              />
+              <button
+                type="button"
+                class="toggle-password"
+                data-target="claude-api-key"
+              >
+                <i class="fas fa-eye"></i>
+              </button>
+              <small>用于访问 Claude API 的密钥</small>
+            </div>
+
+            <div class="form-group password-field">
+              <label for="openai-composite-api-key"
+                >OpenAI Composite API 密钥</label
+              >
+              <input
+                type="password"
+                id="openai-composite-api-key"
+                name="openai_composite"
+                placeholder="OpenAI Composite API 密钥"
+              />
+              <button
+                type="button"
+                class="toggle-password"
+                data-target="openai-composite-api-key"
+              >
+                <i class="fas fa-eye"></i>
+              </button>
+              <small>用于访问 OpenAI 兼容接口的 API 密钥</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 端点配置 -->
+      <div id="endpoints-section" class="config-section section-hidden">
+        <div class="config-card">
+          <div class="card-header">
+            <h2><i class="fas fa-server"></i> 服务端点配置</h2>
+          </div>
+
+          <div class="card-content">
+            <div class="form-group">
+              <label for="deepseek-api-url">DeepSeek API 地址</label>
+              <input
+                type="text"
+                id="deepseek-api-url"
+                name="deepseek"
+                placeholder="https://api.deepseek.com/v1/chat/completions"
+              />
+              <small>DeepSeek API 的服务端点 URL</small>
+            </div>
+
+            <div class="form-group">
+              <label for="claude-api-url">Claude API 地址</label>
+              <input
+                type="text"
+                id="claude-api-url"
+                name="claude"
+                placeholder="https://api.anthropic.com/v1/messages"
+              />
+              <small>Claude API 的服务端点 URL</small>
+            </div>
+
+            <div class="form-group">
+              <label for="openai-composite-api-url"
+                >OpenAI Composite API 地址</label
+              >
+              <input
+                type="text"
+                id="openai-composite-api-url"
+                name="openai_composite"
+                placeholder="OpenAI 兼容接口地址"
+              />
+              <small>OpenAI 兼容接口的服务端点 URL</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 模型配置 -->
+      <div id="models-section" class="config-section section-hidden">
+        <div class="config-card">
+          <div class="card-header">
+            <h2><i class="fas fa-robot"></i> 模型配置</h2>
+          </div>
+
+          <div class="card-content">
+            <div class="form-group">
+              <label for="deepseek-model">DeepSeek 模型</label>
+              <input
+                type="text"
+                id="deepseek-model"
+                name="deepseek"
+                placeholder="deepseek-reasoner"
+              />
+              <small>使用的 DeepSeek 模型名称</small>
+            </div>
+
+            <div class="form-group">
+              <label for="claude-model">Claude 模型</label>
+              <input
+                type="text"
+                id="claude-model"
+                name="claude"
+                placeholder="claude-3-5-sonnet-20241022"
+              />
+              <small>使用的 Claude 模型名称</small>
+            </div>
+
+            <div class="form-group">
+              <label for="claude-provider">Claude 提供商</label>
+              <select id="claude-provider" name="claude">
+                <option value="anthropic">Anthropic</option>
+                <option value="oneapi">OneAPI</option>
+              </select>
+              <small>选择使用的 Claude API 提供商</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 全局选项 -->
+      <div id="options-section" class="config-section section-hidden">
+        <div class="config-card">
+          <div class="card-header">
+            <h2><i class="fas fa-cog"></i> 全局选项</h2>
+          </div>
+
+          <div class="card-content">
+            <div class="form-group">
+              <label for="allow-origins">允许的源 (CORS)</label>
+              <input
+                type="text"
+                id="allow-origins"
+                name="allow_origins"
+                placeholder="*"
+              />
+              <small
+                >多个域名使用逗号分隔，如
+                http://localhost:3000,https://chat.example.com</small
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="is-origin-reasoning">推理过程格式</label>
+              <select id="is-origin-reasoning" name="is_origin_reasoning">
+                <option value="true">Origin_Reasoning 格式</option>
+                <option value="false">
+                  &lt;think&gt;&lt;/think&gt; 标签格式
+                </option>
+              </select>
+              <small>选择 DeepSeek 推理结果传递给 Claude 的格式</small>
+            </div>
+
+            <div class="form-group">
+              <label for="log-level">日志级别</label>
+              <select id="log-level" name="log_level">
+                <option value="DEBUG">DEBUG</option>
+                <option value="INFO">INFO</option>
+                <option value="WARNING">WARNING</option>
+                <option value="ERROR">ERROR</option>
+                <option value="CRITICAL">CRITICAL</option>
+              </select>
+              <small>设置应用程序的日志记录级别</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 系统状态 -->
+      <div id="system-section" class="config-section section-hidden">
+        <div class="config-card">
+          <div class="card-header">
+            <h2><i class="fas fa-tachometer-alt"></i> 系统状态</h2>
+          </div>
+
+          <div class="system-info">
+            <p>此功能正在开发中，将来会显示系统的运行状态信息...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 模型映射部分 -->
+      <div id="model-mappings-section" class="config-section section-hidden">
+        <div class="config-card">
+          <div
+            class="card-header"
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <div>
+              <h2><i class="fas fa-exchange-alt"></i> 模型映射</h2>
+              <small
+                >设置模型名称的映射关系，允许用户使用别名替代模型名称</small
+              >
+            </div>
+            <button id="open-add-mapping-modal" class="btn btn-primary">
+              <i class="fas fa-plus"></i> 添加映射
+            </button>
+          </div>
+
+          <div class="card-content-y">
+            <div class="table-responsive" style="margin-bottom: 0">
+              <table class="mapping-table">
+                <thead>
+                  <tr>
+                    <th>模型别名</th>
+                    <th>实际模型</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="mapping-table-body">
+                  <!-- 映射关系将在此动态生成 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 模态窗口：添加映射 -->
+      <div id="add-mapping-modal" class="modal-overlay">
+        <div class="modal">
+          <div class="modal-header">
+            <h3><i class="fas fa-plus"></i> 添加新映射</h3>
+            <button class="close-modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="modal-new-alias">模型别名</label>
+              <input
+                type="text"
+                id="modal-new-alias"
+                placeholder="例如: deepclaude"
+              />
+              <small>用户可以使用的模型名称别名</small>
+            </div>
+            <div class="form-group">
+              <label for="modal-new-model-name">实际模型</label>
+              <input
+                type="text"
+                id="modal-new-model-name"
+                placeholder="例如: claude-3-5-sonnet"
+              />
+              <small>该别名将映射到的实际模型名称</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="modal-cancel-btn" class="btn btn-secondary">
+              取消
+            </button>
+            <button id="modal-add-mapping-btn" class="btn btn-primary">
+              保存
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="form-actions">
+        <button id="save-btn" class="btn btn-primary">
+          <i class="fas fa-save"></i> 保存配置
+        </button>
+        <button id="reset-btn" class="btn btn-secondary">
+          <i class="fas fa-undo"></i> 重置更改
+        </button>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // DOM 元素
+        const menuItems = document.querySelectorAll(".menu-item");
+        const sections = document.querySelectorAll(".config-section");
+        const togglePasswordBtns =
+          document.querySelectorAll(".toggle-password");
+        const saveBtn = document.getElementById("save-btn");
+        const resetBtn = document.getElementById("reset-btn");
+        const logoutBtn = document.getElementById("logout-btn");
+        const messageBox = document.getElementById("message-box");
+        // 获取当前路径的基础URL
+        const basePath = "/admin";
+        // 表单字段
+        const allInputs = document.querySelectorAll("input, select");
+
+        // 配置数据
+        let configData = {};
+
+        // 获取配置数据
+        fetchConfig();
+
+        // 显示对应页面的函数
+        function showSection(sectionId) {
+          // 更新活动菜单项
+          menuItems.forEach((mi) => {
+            if (mi.getAttribute("data-section") === sectionId) {
+              mi.classList.add("active");
+            } else {
+              mi.classList.remove("active");
+            }
+          });
+
+          // 控制底部按钮的显示/隐藏
+          const formActions = document.querySelector(".form-actions");
+          if (sectionId === "model-mappings") {
+            formActions.style.display = "none";
+          } else {
+            formActions.style.display = "flex";
+          }
+
+          // 显示对应的部分
+          sections.forEach((section) => {
+            if (section.id === sectionId + "-section") {
+              section.classList.remove("section-hidden");
+            } else {
+              section.classList.add("section-hidden");
+            }
+          });
+
+          // 保存当前页面到 localStorage
+          localStorage.setItem("currentSection", sectionId);
+
+          // 更新 URL hash
+          window.location.hash = sectionId;
+        }
+
+        // 初始化页面时检查 URL hash
+        function initActivePage() {
+          // 首先检查 URL hash
+          let sectionId = window.location.hash.substring(1); // 移除开头的 #
+
+          // 如果 hash 为空，从 localStorage 获取
+          if (!sectionId) {
+            sectionId = localStorage.getItem("currentSection");
+          }
+
+          // 如果两者都没有，默认显示 API 密钥页面
+          if (
+            !sectionId ||
+            !document.querySelector(`.menu-item[data-section="${sectionId}"]`)
+          ) {
+            sectionId = "api-keys";
+          }
+
+          showSection(sectionId);
+        }
+
+        // 菜单切换
+        menuItems.forEach((item) => {
+          item.addEventListener("click", function (e) {
+            e.preventDefault();
+            const sectionId = this.getAttribute("data-section");
+            showSection(sectionId);
+          });
+        });
+
+        // 在页面加载完成后初始化当前页面
+        initActivePage();
+
+        // 密码切换可见性
+        togglePasswordBtns.forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const targetId = this.getAttribute("data-target");
+            const targetInput = document.getElementById(targetId);
+            const icon = this.querySelector("i");
+
+            if (targetInput.type === "password") {
+              targetInput.type = "text";
+              icon.classList.remove("fa-eye");
+              icon.classList.add("fa-eye-slash");
+            } else {
+              targetInput.type = "password";
+              icon.classList.remove("fa-eye-slash");
+              icon.classList.add("fa-eye");
+            }
+          });
+        });
+
+        // 跟踪表单变化
+        allInputs.forEach((input) => {
+          input.addEventListener("change", function () {
+            this.classList.add("modified");
+          });
+        });
+
+        // 保存按钮点击事件
+        saveBtn.addEventListener("click", saveConfig);
+
+        // 重置按钮点击事件
+        resetBtn.addEventListener("click", resetForm);
+
+        // 退出按钮点击事件
+        logoutBtn.addEventListener("click", logout);
+
+        // 获取配置
+        async function fetchConfig() {
+          const token = localStorage.getItem("auth_token");
+
+          if (!token) {
+            window.location.href = `${basePath}/login`;
+            return;
+          }
+
+          try {
+            const response = await fetch(`${basePath}/api/config`, {
+              headers: {
+                Authorization: `Basic ${token}`,
+              },
+            });
+
+            if (response.ok) {
+              configData = await response.json();
+              populateForm(configData);
+              console.log("配置加载成功");
+            } else if (response.status === 401) {
+              localStorage.removeItem("auth_token");
+              window.location.href = `${basePath}/login`;
+            } else {
+              showMessage("加载配置失败: " + response.statusText, "error");
+            }
+          } catch (error) {
+            showMessage("获取配置时发生错误: " + error.message, "error");
+          }
+        }
+
+        // 填充表单
+        function populateForm(data) {
+          // API 密钥
+          document.getElementById("allow-api-key").value =
+            data.api_keys?.allow_api_key || "";
+          document.getElementById("deepseek-api-key").value =
+            data.api_keys?.deepseek || "";
+          document.getElementById("claude-api-key").value =
+            data.api_keys?.claude || "";
+          document.getElementById("openai-composite-api-key").value =
+            data.api_keys?.openai_composite || "";
+
+          // 端点
+          document.getElementById("deepseek-api-url").value =
+            data.endpoints?.deepseek || "";
+          document.getElementById("claude-api-url").value =
+            data.endpoints?.claude || "";
+          document.getElementById("openai-composite-api-url").value =
+            data.endpoints?.openai_composite || "";
+
+          // 模型
+          document.getElementById("deepseek-model").value =
+            data.models?.deepseek || "";
+          document.getElementById("claude-model").value =
+            data.models?.claude || "";
+          document.getElementById("claude-provider").value =
+            data.providers?.claude || "anthropic";
+
+          // 全局选项
+          document.getElementById("allow-origins").value =
+            data.options?.allow_origins || "*";
+          document.getElementById("is-origin-reasoning").value =
+            data.options?.is_origin_reasoning?.toString() || "true";
+          document.getElementById("log-level").value =
+            data.options?.log_level || "INFO";
+
+          // 清除所有修改标记
+          allInputs.forEach((input) => {
+            input.classList.remove("modified");
+          });
+        }
+
+        // 收集表单数据
+        function collectFormData() {
+          return {
+            api_keys: {
+              allow_api_key: document.getElementById("allow-api-key").value,
+              deepseek: document.getElementById("deepseek-api-key").value,
+              claude: document.getElementById("claude-api-key").value,
+              openai_composite: document.getElementById(
+                "openai-composite-api-key"
+              ).value,
+            },
+            endpoints: {
+              deepseek: document.getElementById("deepseek-api-url").value,
+              claude: document.getElementById("claude-api-url").value,
+              openai_composite: document.getElementById(
+                "openai-composite-api-url"
+              ).value,
+            },
+            models: {
+              deepseek: document.getElementById("deepseek-model").value,
+              claude: document.getElementById("claude-model").value,
+            },
+            providers: {
+              claude: document.getElementById("claude-provider").value,
+            },
+            options: {
+              allow_origins: document.getElementById("allow-origins").value,
+              is_origin_reasoning:
+                document.getElementById("is-origin-reasoning").value === "true",
+              log_level: document.getElementById("log-level").value,
+            },
+          };
+        }
+
+        // 保存配置
+        async function saveConfig() {
+          const token = localStorage.getItem("auth_token");
+
+          if (!token) {
+            window.location.href = `${basePath}/login`;
+            return;
+          }
+
+          const formData = collectFormData();
+
+          try {
+            const response = await fetch(`${basePath}/api/config`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Basic ${token}`,
+              },
+              body: JSON.stringify(formData),
+            });
+
+            if (response.ok) {
+              showMessage("配置已成功保存！", "success");
+              configData = formData;
+
+              // 清除修改标记
+              allInputs.forEach((input) => {
+                input.classList.remove("modified");
+              });
+            } else if (response.status === 401) {
+              localStorage.removeItem("auth_token");
+              window.location.href = `${basePath}/login`;
+            } else {
+              const error = await response.json();
+              showMessage(
+                "保存配置失败: " + (error.message || response.statusText),
+                "error"
+              );
+            }
+          } catch (error) {
+            showMessage("保存配置时发生错误: " + error.message, "error");
+          }
+        }
+
+        // 重置表单
+        function resetForm() {
+          populateForm(configData);
+          showMessage("已重置为当前配置", "info");
+        }
+
+        // 退出登录
+        function logout() {
+          localStorage.removeItem("auth_token");
+          window.location.href = `${basePath}/login`;
+        }
+
+        // 显示消息
+        function showMessage(message, type = "info") {
+          messageBox.textContent = message;
+          messageBox.className = "message-box " + type + " show";
+
+          // 5秒后自动隐藏
+          setTimeout(() => {
+            messageBox.classList.remove("show");
+          }, 5000);
+        }
+
+        // 初始化模型映射表格
+        async function loadModelMappings() {
+          try {
+            const token = localStorage.getItem("auth_token");
+
+            if (!token) {
+              window.location.href = `${basePath}/login`;
+              return;
+            }
+
+            const response = await fetch(`${basePath}/api/model-mappings`, {
+              headers: {
+                Authorization: `Basic ${token}`,
+              },
+            });
+
+            if (response.ok) {
+              const mappings = await response.json();
+              updateModelMappingsTable(mappings);
+            } else if (response.status === 401) {
+              localStorage.removeItem("auth_token");
+              window.location.href = `${basePath}/login`;
+            } else {
+              showMessage("加载模型映射失败: " + response.statusText, "error");
+            }
+          } catch (error) {
+            showMessage("获取模型映射时发生错误: " + error.message, "error");
+          }
+        }
+
+        // 更新模型映射表格
+        function updateModelMappingsTable(mappings) {
+          const tableBody = document.getElementById("mapping-table-body");
+          tableBody.innerHTML = "";
+
+          if (Object.keys(mappings).length === 0) {
+            const row = document.createElement("tr");
+            row.innerHTML =
+              '<td colspan="3" class="text-center">暂无模型映射</td>';
+            tableBody.appendChild(row);
+            return;
+          }
+
+          for (const [alias, modelName] of Object.entries(mappings)) {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${alias}</td>
+              <td>${modelName}</td>
+              <td>
+                <button class="delete-btn" data-alias="${alias}">
+                  <i class="fas fa-trash-alt"></i> 删除
+                </button>
+              </td>
+            `;
+            tableBody.appendChild(row);
+          }
+
+          // 添加删除按钮事件监听
+          tableBody.querySelectorAll(".delete-btn").forEach((btn) => {
+            btn.addEventListener("click", async function () {
+              const alias = this.getAttribute("data-alias");
+              await deleteModelMapping(alias);
+            });
+          });
+        }
+
+        // 删除模型映射
+        async function deleteModelMapping(alias) {
+          const token = localStorage.getItem("auth_token");
+
+          if (!token) {
+            window.location.href = `${basePath}/login`;
+            return;
+          }
+
+          if (!confirm(`确定要删除 "${alias}" 的映射吗？`)) {
+            return;
+          }
+
+          try {
+            const response = await fetch(
+              `${basePath}/api/model-mappings/${alias}`,
+              {
+                method: "DELETE",
+                headers: {
+                  Authorization: `Basic ${token}`,
+                },
+              }
+            );
+
+            if (response.ok) {
+              showMessage(`已删除映射: ${alias}`, "success");
+              loadModelMappings();
+            } else {
+              const error = await response.json();
+              showMessage(
+                "删除映射失败: " + (error.message || response.statusText),
+                "error"
+              );
+            }
+          } catch (error) {
+            showMessage("删除映射时发生错误: " + error.message, "error");
+          }
+        }
+
+        // 模态窗口元素
+        const addMappingModal = document.getElementById("add-mapping-modal");
+        const openAddMappingModalBtn = document.getElementById(
+          "open-add-mapping-modal"
+        );
+        const closeModalBtn = document.querySelector(".close-modal");
+        const modalCancelBtn = document.getElementById("modal-cancel-btn");
+        const modalAddMappingBtn = document.getElementById(
+          "modal-add-mapping-btn"
+        );
+
+        // 打开模态窗口
+        openAddMappingModalBtn.addEventListener("click", function () {
+          addMappingModal.style.display = "flex";
+          document.getElementById("modal-new-alias").value = "";
+          document.getElementById("modal-new-model-name").value = "";
+          document.getElementById("modal-new-alias").focus();
+        });
+
+        // 关闭模态窗口的几种方式
+        function closeModal() {
+          addMappingModal.style.display = "none";
+        }
+
+        closeModalBtn.addEventListener("click", closeModal);
+        modalCancelBtn.addEventListener("click", closeModal);
+
+        // 点击模态窗口外部关闭
+        addMappingModal.addEventListener("click", function (e) {
+          if (e.target === addMappingModal) {
+            closeModal();
+          }
+        });
+
+        // ESC键关闭模态窗口
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && addMappingModal.style.display === "flex") {
+            closeModal();
+          }
+        });
+
+        // 添加模型映射 - 通过模态窗口
+        modalAddMappingBtn.addEventListener("click", addModelMapping);
+
+        // 添加模型映射
+        async function addModelMapping() {
+          const token = localStorage.getItem("auth_token");
+
+          if (!token) {
+            window.location.href = `${basePath}/login`;
+            return;
+          }
+
+          const alias = document.getElementById("modal-new-alias").value.trim();
+          const modelName = document
+            .getElementById("modal-new-model-name")
+            .value.trim();
+
+          if (!alias || !modelName) {
+            showMessage("别名和模型名称都不能为空", "warning");
+            return;
+          }
+
+          try {
+            const response = await fetch(`${basePath}/api/model-mappings`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Basic ${token}`,
+              },
+              body: JSON.stringify({
+                alias: alias,
+                model_name: modelName,
+              }),
+            });
+
+            if (response.ok) {
+              showMessage(`已添加映射: ${alias} -> ${modelName}`, "success");
+              closeModal();
+              loadModelMappings();
+            } else {
+              const error = await response.json();
+              showMessage(
+                "添加映射失败: " + (error.message || response.statusText),
+                "error"
+              );
+            }
+          } catch (error) {
+            showMessage("添加映射时发生错误: " + error.message, "error");
+          }
+        }
+
+        // 加载模型映射
+        loadModelMappings();
+
+        // 在页面加载时检查当前激活的菜单项，决定是否显示底部按钮
+        function checkActiveSection() {
+          const activeMenu = document.querySelector(".menu-item.active");
+          if (
+            activeMenu &&
+            activeMenu.getAttribute("data-section") === "model-mappings"
+          ) {
+            document.querySelector(".form-actions").style.display = "none";
+          }
+        }
+
+        // 页面初始化完成后检查一次
+        checkActiveSection();
+      });
+    </script>
+  </body>
+</html>

@@ -6,6 +6,8 @@ from typing import Dict, List, Any
 
 import yaml
 
+from .config_loader import get_config, AppConfig
+
 def load_models_config() -> Dict[str, List[Dict[str, Any]]]:
     """加载模型配置
 
@@ -15,3 +17,5 @@ def load_models_config() -> Dict[str, List[Dict[str, Any]]]:
     config_path = Path(__file__).parent / "models.yaml"
     with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+__all__ = ["get_config", "AppConfig", "load_models_config"]

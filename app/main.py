@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Request
@@ -10,34 +11,33 @@ from app.deepclaude.deepclaude import DeepClaude
 from app.openai_composite import OpenAICompatibleComposite
 from app.utils.auth import verify_api_key
 from app.utils.logger import logger
-from app.config import load_models_config
+from app.config import get_config, load_models_config
 
-# 加载环境变量
+# 加载环境变量 - 仅用于初始化配置管理器
 load_dotenv()
+
+# 获取配置实例
+config = get_config()
 
 app = FastAPI(title="DeepClaude API")
 
-# 从环境变量获取 CORS配置, API 密钥、地址以及模型名称
-ALLOW_ORIGINS = os.getenv("ALLOW_ORIGINS", "*")
+# 从配置获取值
+ALLOW_ORIGINS = config.get_value("options.allow_origins", "*")
 
-CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
-ENV_CLAUDE_MODEL = os.getenv("CLAUDE_MODEL")
-CLAUDE_PROVIDER = os.getenv(
-    "CLAUDE_PROVIDER", "anthropic"
-)  # Claude模型提供商, 默认为anthropic
-CLAUDE_API_URL = os.getenv("CLAUDE_API_URL", "https://api.anthropic.com/v1/messages")
+CLAUDE_API_KEY = config.get_value("api_keys.claude", "")
+ENV_CLAUDE_MODEL = config.get_value("models.claude", "")
+CLAUDE_PROVIDER = config.get_value("providers.claude", "anthropic")
+CLAUDE_API_URL = config.get_value("endpoints.claude", "https://api.anthropic.com/v1/messages")
 
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-DEEPSEEK_API_URL = os.getenv(
-    "DEEPSEEK_API_URL", "https://api.deepseek.com/v1/chat/completions"
-)
-DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-reasoner")
+DEEPSEEK_API_KEY = config.get_value("api_keys.deepseek", "")
+DEEPSEEK_API_URL = config.get_value("endpoints.deepseek", "https://api.deepseek.com/v1/chat/completions")
+DEEPSEEK_MODEL = config.get_value("models.deepseek", "deepseek-reasoner")
 
-OPENAI_COMPOSITE_API_KEY = os.getenv("OPENAI_COMPOSITE_API_KEY")
-OPENAI_COMPOSITE_API_URL = os.getenv("OPENAI_COMPOSITE_API_URL")
-OPENAI_COMPOSITE_MODEL = os.getenv("OPENAI_COMPOSITE_MODEL")
+OPENAI_COMPOSITE_API_KEY = config.get_value("api_keys.openai_composite", "")
+OPENAI_COMPOSITE_API_URL = config.get_value("endpoints.openai_composite", "")
+OPENAI_COMPOSITE_MODEL = config.get_value("models.openai_composite", "")
 
-IS_ORIGIN_REASONING = os.getenv("IS_ORIGIN_REASONING", "True").lower() == "true"
+IS_ORIGIN_REASONING = config.get_value("options.is_origin_reasoning", True)
 
 # CORS设置
 allow_origins_list = (
@@ -83,6 +83,19 @@ openai_composite = OpenAICompatibleComposite(
 logger.debug("当前日志级别为 DEBUG")
 logger.info("开始请求")
 
+# 启动 Web 配置管理界面（如果启用）
+if os.getenv("ENABLE_WEB_CONFIG", "false").lower() == "true":
+    try:
+        from app.web_config import start_web_config
+        import asyncio
+        web_config_port = os.getenv("WEB_CONFIG_PORT", "8080")
+        web_config_path = os.getenv("WEB_CONFIG_PATH", "/admin")
+        logger.info(f"启用 Web 配置管理界面: http://0.0.0.0:{web_config_port}{web_config_path}")
+        asyncio.create_task(start_web_config())
+    except ImportError as e:
+        logger.error(f"加载 Web 配置模块失败: {e}, 请安装依赖: pip install jinja2 pyyaml uvicorn python-dotenv python-multipart")
+    except Exception as e:
+        logger.error(f"启动 Web 配置界面失败: {e}")
 
 @app.get("/", dependencies=[Depends(verify_api_key)])
 async def root():
@@ -97,6 +110,66 @@ async def list_models():
     返回格式遵循 OpenAI API 标准
     """
     try:
+        config = get_config()
+        created_timestamp = int(time.time())
+        
+        # 创建标准格式的模型列表
+        models_data = []
+        if os.getenv("ENABLE_WEB_CONFIG", "false").lower() == "true":
+            models_data.append({
+                "id": "deepclaude",
+                "object": "model",
+                "created": created_timestamp,
+                "owned_by": "deepclaude",
+                "permission": [
+                    {
+                        "id": "modelperm-deepclaude",
+                        "object": "model_permission",
+                        "created": created_timestamp,
+                        "allow_create_engine": False,
+                        "allow_sampling": True,
+                        "allow_logprobs": True,
+                        "allow_search_indices": False,
+                        "allow_view": True,
+                        "allow_fine_tuning": False,
+                        "organization": "*",
+                        "group": None,
+                        "is_blocking": False
+                    }
+                ],
+                "root": "deepclaude",
+                "parent": None
+            })
+            
+            # 添加模型映射别名
+            model_mappings = config.get_value("model_mappings", {})
+            for alias, target_model in model_mappings.items():
+                models_data.append({
+                    "id": alias,
+                    "object": "model",
+                    "created": created_timestamp,
+                    "owned_by": "deepclaude",
+                    "permission": [
+                        {
+                            "id": f"modelperm-{alias}",
+                            "object": "model_permission",
+                            "created": created_timestamp,
+                            "allow_create_engine": False,
+                            "allow_sampling": True,
+                            "allow_logprobs": True,
+                            "allow_search_indices": False,
+                            "allow_view": True,
+                            "allow_fine_tuning": False,
+                            "organization": "*",
+                            "group": None,
+                            "is_blocking": False
+                        }
+                    ],
+                    "root": alias,
+                    "parent": None
+                })
+            
+            return {"object": "list", "data": models_data}
         config = load_models_config()
         return {"object": "list", "data": config["models"]}
     except Exception as e:
@@ -154,13 +227,17 @@ async def chat_completions(request: Request):
                 )
         else:
             # 使用 OpenAI 兼容组合模型
+            if os.getenv("ENABLE_WEB_CONFIG", "false").lower() == "true":
+                model_mapping = get_config().get_model_mapping(model)
+            else:
+                model_mapping = OPENAI_COMPOSITE_MODEL
             if stream:
                 return StreamingResponse(
                     openai_composite.chat_completions_with_stream(
                         messages=messages,
                         model_arg=model_arg[:4],
                         deepseek_model=DEEPSEEK_MODEL,
-                        target_model=OPENAI_COMPOSITE_MODEL,
+                        target_model=model_mapping,
                     ),
                     media_type="text/event-stream",
                 )
@@ -169,7 +246,7 @@ async def chat_completions(request: Request):
                     messages=messages,
                     model_arg=model_arg[:4],
                     deepseek_model=DEEPSEEK_MODEL,
-                    target_model=OPENAI_COMPOSITE_MODEL,
+                    target_model=model_mapping,
                 )
 
     except Exception as e:
