@@ -26,12 +26,10 @@ USER appuser
 # 复制项目文件
 COPY --chown=appuser:appuser pyproject.toml README.md ./
 COPY --chown=appuser:appuser app ./app
+COPY --chown=appuser:appuser requirements.txt ./
 
 # 安装项目依赖
-RUN pip install --no-cache-dir tomli jinja2 && \
-    python3 -c "import tomli; from pathlib import Path; p = tomli.loads(Path('pyproject.toml').read_text()); print('\n'.join(p['project']['dependencies']))" > requirements.txt && \
-    pip install --no-cache-dir -r requirements.txt && \
-    rm requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # 暴露端口
 EXPOSE 8000 8080
