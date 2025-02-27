@@ -182,15 +182,13 @@
 
       .card-content {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         gap: 20px;
+        padding: 10px;
       }
-      .card-content-y {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
-      }
-      /* 表单元素样式 */
+
       .form-group {
+        position: relative;
         margin-bottom: 20px;
       }
 
@@ -198,6 +196,7 @@
         display: block;
         margin-bottom: 8px;
         font-weight: 500;
+        color: #444;
         font-size: 14px;
       }
 
@@ -223,9 +222,10 @@
 
       .form-group small {
         display: block;
-        margin-top: 5px;
+        margin-top: 6px;
         color: #666;
         font-size: 12px;
+        line-height: 1.4;
       }
 
       .form-actions {
@@ -493,6 +493,31 @@
         display: flex;
         justify-content: flex-end;
         gap: 10px;
+      }
+
+      /* 新增下拉框样式 */
+      .form-group select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid var(--border-color);
+        border-radius: 5px;
+        font-size: 15px;
+        appearance: none;
+        background: #fff
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23555' d='M6 8.825L1.175 4 2.238 2.938 6 6.7l3.763-3.762L10.825 4z'/%3E%3C/svg%3E")
+          no-repeat right 15px center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .form-group select:hover {
+        border-color: var(--primary-color);
+      }
+
+      .form-group select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.1);
+        outline: none;
       }
     </style>
     <link
@@ -1010,34 +1035,47 @@
         // 退出按钮点击事件
         logoutBtn.addEventListener("click", logout);
 
-        // 获取配置
-        async function fetchConfig() {
-          const token = localStorage.getItem("auth_token");
-
-          if (!token) {
-            window.location.href = `${basePath}/login`;
-            return;
-          }
+        // 添加通用的 API 请求函数
+        async function apiRequest(endpoint, options = {}) {
+          const defaultOptions = {
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          };
 
           try {
-            const response = await fetch(`${basePath}/api/config`, {
-              headers: {
-                Authorization: `Basic ${token}`,
-              },
+            const response = await fetch(`${basePath}/api/${endpoint}`, {
+              ...defaultOptions,
+              ...options,
             });
 
             if (response.ok) {
-              configData = await response.json();
-              populateForm(configData);
-              console.log("配置加载成功");
+              return await response.json();
             } else if (response.status === 401) {
-              localStorage.removeItem("auth_token");
               window.location.href = `${basePath}/login`;
+              return null;
             } else {
-              showMessage("加载配置失败: " + response.statusText, "error");
+              const error = await response.json();
+              throw new Error(error.message || response.statusText);
             }
           } catch (error) {
-            showMessage("获取配置时发生错误: " + error.message, "error");
+            showMessage(`API 请求错误: ${error.message}`, "error");
+            throw error;
+          }
+        }
+
+        // 获取配置
+        async function fetchConfig() {
+          try {
+            const data = await apiRequest("config");
+            if (data) {
+              configData = data;
+              populateForm(data);
+              console.log("配置加载成功");
+            }
+          } catch (error) {
+            console.error("获取配置失败:", error);
           }
         }
 
@@ -1119,45 +1157,21 @@
 
         // 保存配置
         async function saveConfig() {
-          const token = localStorage.getItem("auth_token");
-
-          if (!token) {
-            window.location.href = `${basePath}/login`;
-            return;
-          }
-
           const formData = collectFormData();
 
           try {
-            const response = await fetch(`${basePath}/api/config`, {
+            await apiRequest("config", {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Basic ${token}`,
-              },
               body: JSON.stringify(formData),
             });
 
-            if (response.ok) {
-              showMessage("配置已成功保存！", "success");
-              configData = formData;
-
-              // 清除修改标记
-              allInputs.forEach((input) => {
-                input.classList.remove("modified");
-              });
-            } else if (response.status === 401) {
-              localStorage.removeItem("auth_token");
-              window.location.href = `${basePath}/login`;
-            } else {
-              const error = await response.json();
-              showMessage(
-                "保存配置失败: " + (error.message || response.statusText),
-                "error"
-              );
-            }
+            showMessage("配置已成功保存！", "success");
+            configData = formData;
+            allInputs.forEach((input) => {
+              input.classList.remove("modified");
+            });
           } catch (error) {
-            showMessage("保存配置时发生错误: " + error.message, "error");
+            console.error("保存配置失败:", error);
           }
         }
 
@@ -1184,33 +1198,15 @@
           }, 5000);
         }
 
-        // 初始化模型映射表格
+        // 加载模型映射
         async function loadModelMappings() {
           try {
-            const token = localStorage.getItem("auth_token");
-
-            if (!token) {
-              window.location.href = `${basePath}/login`;
-              return;
-            }
-
-            const response = await fetch(`${basePath}/api/model-mappings`, {
-              headers: {
-                Authorization: `Basic ${token}`,
-              },
-            });
-
-            if (response.ok) {
-              const mappings = await response.json();
+            const mappings = await apiRequest("model-mappings");
+            if (mappings) {
               updateModelMappingsTable(mappings);
-            } else if (response.status === 401) {
-              localStorage.removeItem("auth_token");
-              window.location.href = `${basePath}/login`;
-            } else {
-              showMessage("加载模型映射失败: " + response.statusText, "error");
             }
           } catch (error) {
-            showMessage("获取模型映射时发生错误: " + error.message, "error");
+            console.error("加载模型映射失败:", error);
           }
         }
 
@@ -1252,40 +1248,16 @@
 
         // 删除模型映射
         async function deleteModelMapping(alias) {
-          const token = localStorage.getItem("auth_token");
-
-          if (!token) {
-            window.location.href = `${basePath}/login`;
-            return;
-          }
-
           if (!confirm(`确定要删除 "${alias}" 的映射吗？`)) {
             return;
           }
 
           try {
-            const response = await fetch(
-              `${basePath}/api/model-mappings/${alias}`,
-              {
-                method: "DELETE",
-                headers: {
-                  Authorization: `Basic ${token}`,
-                },
-              }
-            );
-
-            if (response.ok) {
-              showMessage(`已删除映射: ${alias}`, "success");
-              loadModelMappings();
-            } else {
-              const error = await response.json();
-              showMessage(
-                "删除映射失败: " + (error.message || response.statusText),
-                "error"
-              );
-            }
+            await apiRequest(`model-mappings/${alias}`, { method: "DELETE" });
+            showMessage(`已删除映射: ${alias}`, "success");
+            loadModelMappings();
           } catch (error) {
-            showMessage("删除映射时发生错误: " + error.message, "error");
+            console.error("删除映射失败:", error);
           }
         }
 
@@ -1335,13 +1307,6 @@
 
         // 添加模型映射
         async function addModelMapping() {
-          const token = localStorage.getItem("auth_token");
-
-          if (!token) {
-            window.location.href = `${basePath}/login`;
-            return;
-          }
-
           const alias = document.getElementById("modal-new-alias").value.trim();
           const modelName = document
             .getElementById("modal-new-model-name")
@@ -1353,31 +1318,19 @@
           }
 
           try {
-            const response = await fetch(`${basePath}/api/model-mappings`, {
+            await apiRequest("model-mappings", {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Basic ${token}`,
-              },
               body: JSON.stringify({
                 alias: alias,
                 model_name: modelName,
               }),
             });
 
-            if (response.ok) {
-              showMessage(`已添加映射: ${alias} -> ${modelName}`, "success");
-              closeModal();
-              loadModelMappings();
-            } else {
-              const error = await response.json();
-              showMessage(
-                "添加映射失败: " + (error.message || response.statusText),
-                "error"
-              );
-            }
+            showMessage(`已添加映射: ${alias} -> ${modelName}`, "success");
+            closeModal();
+            loadModelMappings();
           } catch (error) {
-            showMessage("添加映射时发生错误: " + error.message, "error");
+            console.error("添加映射失败:", error);
           }
         }
 

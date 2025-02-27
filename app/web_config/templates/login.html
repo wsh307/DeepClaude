@@ -173,10 +173,8 @@
         const loginForm = document.getElementById("login-form");
         const errorBox = document.getElementById("error-box");
 
-        // 获取当前路径的基础URL
         const currentPath = window.location.pathname;
         const basePath = currentPath.substring(0, currentPath.lastIndexOf("/"));
-        console.log("当前基础路径:", basePath);
 
         loginForm.addEventListener("submit", async function (e) {
           e.preventDefault();
@@ -184,29 +182,24 @@
           const username = document.getElementById("username").value;
           const password = document.getElementById("password").value;
 
-          // 使用 Basic Auth 格式进行验证
-          const credentials = btoa(`${username}:${password}`);
-
           try {
-            // 使用相对路径
-            const response = await fetch(`${basePath}/api/auth`, {
+            const response = await fetch(`${basePath}/api/token`, {
               method: "POST",
               headers: {
-                Authorization: `Basic ${credentials}`,
+                "Content-Type": "application/x-www-form-urlencoded",
               },
+              body: new URLSearchParams({
+                username: username,
+                password: password,
+              }),
+              credentials: "include", // 重要：包含 cookies
             });
 
             if (response.ok) {
-              // 认证成功，保存认证信息
-              localStorage.setItem("auth_token", credentials);
-
-              // 直接跳转到首页，不使用重定向
+              // 直接跳转到首页，cookie 会自动随请求发送
               window.location.replace(basePath || "./");
             } else {
-              // 显示错误消息
               errorBox.classList.add("show");
-
-              // 清空密码字段
               document.getElementById("password").value = "";
             }
           } catch (error) {

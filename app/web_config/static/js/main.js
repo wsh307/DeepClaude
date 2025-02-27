@@ -59,18 +59,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // 获取配置
     async function fetchConfig() {
         try {
-            const response = await fetch(`${apiBasePath}/config`);
-            if (!response.ok) {
-                throw new Error('获取配置失败');
+            const response = await fetch(`${apiBasePath}/config`, {
+                credentials: 'include'  // 重要：包含 cookies
+            });
+            
+            if (response.ok) {
+                configData = await response.json();
+                populateForm(configData);
+                console.log("配置加载成功");
+            } else if (response.status === 401) {
+                window.location.href = `${apiPath}/login`;
+            } else {
+                showMessage("加载配置失败: " + response.statusText, "error");
             }
-            
-            const data = await response.json();
-            Object.assign(configData, data);
-            
-            // 填充表单
-            populateForm(data);
         } catch (error) {
-            showMessage(error.message, 'error');
+            showMessage("获取配置时发生错误: " + error.message, "error");
         }
     }
     
@@ -133,29 +136,32 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 保存配置
     async function saveConfig() {
+        const formData = collectFormData();
+
         try {
-            const formData = collectFormData();
-            
             const response = await fetch(`${apiBasePath}/config`, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json'
+                    "Content-Type": "application/json",
                 },
-                body: JSON.stringify(formData)
+                credentials: 'include',  // 重要：包含 cookies
+                body: JSON.stringify(formData),
             });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || '保存配置失败');
+
+            if (response.ok) {
+                showMessage("配置已成功保存！", "success");
+                configData = formData;
+                allInputs.forEach((input) => {
+                    input.classList.remove("modified");
+                });
+            } else if (response.status === 401) {
+                window.location.href = `${apiPath}/login`;
+            } else {
+                const error = await response.json();
+                showMessage("保存配置失败: " + (error.message || response.statusText), "error");
             }
-            
-            const result = await response.json();
-            showMessage('配置保存成功！', 'success');
-            
-            // 更新本地配置数据
-            Object.assign(configData, formData);
         } catch (error) {
-            showMessage(error.message, 'error');
+            showMessage("保存配置时发生错误: " + error.message, "error");
         }
     }
     
@@ -166,16 +172,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // 退出登录
-    function logout() {
-        // 清除基本认证缓存的简单方法是重定向到一个错误的用户名/密码
-        fetch(window.location.href, {
-            headers: {
-                'Authorization': 'Basic ' + btoa('logout:logout')
-            }
-        })
-        .then(() => {
-            window.location.reload();
-        });
+    async function logout() {
+        try {
+            await fetch(`${apiBasePath}/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (error) {
+            console.error('登出时发生错误:', error);
+        } finally {
+            window.location.href = `${apiPath}/login`;
+        }
     }
     
     // 显示消息
