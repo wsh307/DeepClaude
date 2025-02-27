@@ -3,6 +3,7 @@ version: '3.8'
 services:
   deepclaude:
     image: ghcr.io/wsh307/deepclaude:latest
+    # build: .
     container_name: deepclaude
     ports:
       - "8000:8000"  # API 端口
