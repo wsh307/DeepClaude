@@ -18,7 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 创建非 root 用户
 RUN useradd -m -s /bin/bash appuser && \
-    mkdir -p /app/config && \
     chown -R appuser:appuser /app
 
 # 切换到非 root 用户
@@ -27,7 +26,6 @@ USER appuser
 # 复制项目文件
 COPY --chown=appuser:appuser pyproject.toml README.md ./
 COPY --chown=appuser:appuser app ./app
-COPY --chown=appuser:appuser config ./config
 
 # 安装项目依赖
 RUN pip install --no-cache-dir tomli jinja2 && \
