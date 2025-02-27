@@ -2,31 +2,16 @@ name: Docker Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["webConfig"] # 改为您的主分支名称
   workflow_dispatch:
 
 jobs:
-  check-repository:
-    runs-on: ubuntu-latest
-    outputs:
-      is_original: ${{ steps.check.outputs.is_original }}
-    steps:
-      - id: check
-        run: |
-          if [ "${{ github.repository }}" = "ErlichLiu/DeepClaude" ]; then
-            echo "is_original=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_original=false" >> $GITHUB_OUTPUT
-          fi
-
-  build:
-    needs: check-repository
-    if: needs.check-repository.outputs.is_original == 'true'
+  build: # 直接使用 build 任务，移除仓库检查
     runs-on: ubuntu-latest
     permissions:
       packages: write
       contents: read
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -55,7 +40,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64 # 如果不需要 arm64 支持，可以移除
           tags: |
             ghcr.io/${{ env.OWNER_LOWER }}/${{ env.REPO_NAME_LOWER }}:latest
             ghcr.io/${{ env.OWNER_LOWER }}/${{ env.REPO_NAME_LOWER }}:${{ github.sha }}

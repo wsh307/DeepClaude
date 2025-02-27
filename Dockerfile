@@ -1,4 +1,4 @@
-# 使用 Python 3.11 slim 版本作为基础镜像
+# 使用官方 Python 3.11 slim 镜像作为基础镜像
 FROM python:3.11-slim
 
 # 设置工作目录
@@ -6,23 +6,37 @@ WORKDIR /app
 
 # 设置环境变量
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    TZ=Asia/Shanghai \
+    DEBIAN_FRONTEND=noninteractive
 
-# 安装依赖
-RUN pip install --no-cache-dir \
-    aiohttp==3.11.11 \
-    colorlog==6.9.0 \
-    fastapi==0.115.8 \
-    python-dotenv==1.0.1 \
-    pyyaml==6.0.2 \
-    tiktoken==0.8.0 \
-    "uvicorn[standard]"
+# 安装系统依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建非 root 用户
+RUN useradd -m -s /bin/bash appuser && \
+    mkdir -p /app/config && \
+    chown -R appuser:appuser /app
+
+# 切换到非 root 用户
+USER appuser
 
 # 复制项目文件
-COPY ./app ./app
+COPY --chown=appuser:appuser pyproject.toml README.md ./
+COPY --chown=appuser:appuser app ./app
+COPY --chown=appuser:appuser config ./config
+
+# 安装项目依赖
+RUN pip install --no-cache-dir tomli jinja2 && \
+    python3 -c "import tomli; from pathlib import Path; p = tomli.loads(Path('pyproject.toml').read_text()); print('\n'.join(p['project']['dependencies']))" > requirements.txt && \
+    pip install --no-cache-dir -r requirements.txt && \
+    rm requirements.txt
 
 # 暴露端口
-EXPOSE 8000
+EXPOSE 8000 8080
 
 # 启动命令
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
