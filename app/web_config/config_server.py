@@ -4,18 +4,16 @@ import os
 import asyncio
 from typing import Dict, Any, Optional
 
-try:
-    from fastapi import FastAPI, Depends, HTTPException, Request, status
-    from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-    from fastapi.staticfiles import StaticFiles
-    from fastapi.templating import Jinja2Templates
-    from fastapi.security import HTTPBasic, HTTPBasicCredentials
-    from fastapi.middleware.cors import CORSMiddleware
-    import secrets
-    import uvicorn
-    from pathlib import Path
-except ImportError as e:
-    raise ImportError(f"Web 配置界面依赖缺失: {e}. 请运行 'pip install jinja2 pyyaml uvicorn python-dotenv python-multipart'")
+
+from fastapi import FastAPI, Depends, HTTPException, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.middleware.cors import CORSMiddleware
+import secrets
+import uvicorn
+from pathlib import Path
 
 from app.utils.logger import logger
 from .config_manager import ConfigManager
@@ -105,7 +103,6 @@ async def read_root(request: Request):
             password=WEB_CONFIG_PASSWORD
         )
         username = verify_credentials(credentials)
-        
         # 返回主页面
         return templates.TemplateResponse(
             "index.html", 

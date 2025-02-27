@@ -200,8 +200,8 @@
               // 认证成功，保存认证信息
               localStorage.setItem("auth_token", credentials);
 
-              // 重定向到配置页面，使用相对路径
-              window.location.href = basePath || "./";
+              // 直接跳转到首页，不使用重定向
+              window.location.replace(basePath || "./");
             } else {
               // 显示错误消息
               errorBox.classList.add("show");

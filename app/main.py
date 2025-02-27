@@ -12,6 +12,7 @@ from app.openai_composite import OpenAICompatibleComposite
 from app.utils.auth import verify_api_key
 from app.utils.logger import logger
 from app.config import get_config, load_models_config
+from app.config.list_models import get_models_list
 
 # 加载环境变量 - 仅用于初始化配置管理器
 load_dotenv()
@@ -93,7 +94,7 @@ if os.getenv("ENABLE_WEB_CONFIG", "false").lower() == "true":
         logger.info(f"启用 Web 配置管理界面: http://0.0.0.0:{web_config_port}{web_config_path}")
         asyncio.create_task(start_web_config())
     except ImportError as e:
-        logger.error(f"加载 Web 配置模块失败: {e}, 请安装依赖: pip install jinja2 pyyaml uvicorn python-dotenv python-multipart")
+        logger.error(f"加载 Web 配置模块失败: {e}")
     except Exception as e:
         logger.error(f"启动 Web 配置界面失败: {e}")
 
@@ -109,72 +110,7 @@ async def list_models():
     获取可用模型列表
     返回格式遵循 OpenAI API 标准
     """
-    try:
-        config = get_config()
-        created_timestamp = int(time.time())
-        
-        # 创建标准格式的模型列表
-        models_data = []
-        if os.getenv("ENABLE_WEB_CONFIG", "false").lower() == "true":
-            models_data.append({
-                "id": "deepclaude",
-                "object": "model",
-                "created": created_timestamp,
-                "owned_by": "deepclaude",
-                "permission": [
-                    {
-                        "id": "modelperm-deepclaude",
-                        "object": "model_permission",
-                        "created": created_timestamp,
-                        "allow_create_engine": False,
-                        "allow_sampling": True,
-                        "allow_logprobs": True,
-                        "allow_search_indices": False,
-                        "allow_view": True,
-                        "allow_fine_tuning": False,
-                        "organization": "*",
-                        "group": None,
-                        "is_blocking": False
-                    }
-                ],
-                "root": "deepclaude",
-                "parent": None
-            })
-            
-            # 添加模型映射别名
-            model_mappings = config.get_value("model_mappings", {})
-            for alias, target_model in model_mappings.items():
-                models_data.append({
-                    "id": alias,
-                    "object": "model",
-                    "created": created_timestamp,
-                    "owned_by": "deepclaude",
-                    "permission": [
-                        {
-                            "id": f"modelperm-{alias}",
-                            "object": "model_permission",
-                            "created": created_timestamp,
-                            "allow_create_engine": False,
-                            "allow_sampling": True,
-                            "allow_logprobs": True,
-                            "allow_search_indices": False,
-                            "allow_view": True,
-                            "allow_fine_tuning": False,
-                            "organization": "*",
-                            "group": None,
-                            "is_blocking": False
-                        }
-                    ],
-                    "root": alias,
-                    "parent": None
-                })
-            
-            return {"object": "list", "data": models_data}
-        config = load_models_config()
-        return {"object": "list", "data": config["models"]}
-    except Exception as e:
-        logger.error(f"加载模型配置时发生错误: {e}")
-        return {"error": str(e)}
+    return get_models_list()
 
 
 @app.post("/v1/chat/completions", dependencies=[Depends(verify_api_key)])
