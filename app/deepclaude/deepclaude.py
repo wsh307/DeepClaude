@@ -123,7 +123,43 @@ class DeepClaude:
                         break
             except Exception as e:
                 logger.error(f"处理 DeepSeek 流时发生错误: {e}")
-                await claude_queue.put("")
+                # 构造错误响应
+                error_message = str(e)
+                error_info = {
+                    "message": error_message,
+                    "type": "api_error",
+                    "code": "invalid_request_error"
+                }
+                
+                # 处理常见的错误信息
+                if "Input length" in error_message:
+                    error_info["message"] = "输入的上下文内容过长，超过了模型的最大处理长度限制。请减少输入内容或分段处理。"
+                    error_info["message_zh"] = "输入的上下文内容过长，超过了模型的最大处理长度限制。请减少输入内容或分段处理。"
+                    error_info["message_en"] = error_message
+                elif "InvalidParameter" in error_message:
+                    error_info["message"] = "请求参数无效，请检查输入内容。"
+                    error_info["message_zh"] = "请求参数无效，请检查输入内容。"
+                    error_info["message_en"] = error_message
+                elif "BadRequest" in error_message:
+                    error_info["message"] = "请求格式错误，请检查输入内容。"
+                    error_info["message_zh"] = "请求格式错误，请检查输入内容。"
+                    error_info["message_en"] = error_message
+
+                error_response = {
+                    "id": chat_id,
+                    "object": "chat.completion.chunk",
+                    "created": created_time,
+                    "model": deepseek_model,
+                    "error": error_info
+                }
+                await output_queue.put(
+                    f"data: {json.dumps(error_response)}\n\n".encode("utf-8")
+                )
+                # 发送结束标记
+                await output_queue.put(b"data: [DONE]\n\n")
+                # 标记任务结束
+                await output_queue.put(None)
+                return
             # 用 None 标记 DeepSeek 任务结束
             logger.info("DeepSeek 任务处理完成，标记结束")
             await output_queue.put(None)
@@ -204,6 +240,43 @@ class DeepClaude:
                         )
             except Exception as e:
                 logger.error(f"处理 Claude 流时发生错误: {e}")
+                # 构造错误响应
+                error_message = str(e)
+                error_info = {
+                    "message": error_message,
+                    "type": "api_error",
+                    "code": "invalid_request_error"
+                }
+                
+                # 处理常见的错误信息
+                if "Input length" in error_message:
+                    error_info["message"] = "输入的上下文内容过长，超过了模型的最大处理长度限制。请减少输入内容或分段处理。"
+                    error_info["message_zh"] = "输入的上下文内容过长，超过了模型的最大处理长度限制。请减少输入内容或分段处理。"
+                    error_info["message_en"] = error_message
+                elif "InvalidParameter" in error_message:
+                    error_info["message"] = "请求参数无效，请检查输入内容。"
+                    error_info["message_zh"] = "请求参数无效，请检查输入内容。"
+                    error_info["message_en"] = error_message
+                elif "BadRequest" in error_message:
+                    error_info["message"] = "请求格式错误，请检查输入内容。"
+                    error_info["message_zh"] = "请求格式错误，请检查输入内容。"
+                    error_info["message_en"] = error_message
+
+                error_response = {
+                    "id": chat_id,
+                    "object": "chat.completion.chunk",
+                    "created": created_time,
+                    "model": claude_model,
+                    "error": error_info
+                }
+                await output_queue.put(
+                    f"data: {json.dumps(error_response)}\n\n".encode("utf-8")
+                )
+                # 发送结束标记
+                await output_queue.put(b"data: [DONE]\n\n")
+                # 标记任务结束
+                await output_queue.put(None)
+                return
             # 用 None 标记 Claude 任务结束
             logger.info("Claude 任务处理完成，标记结束")
             await output_queue.put(None)
@@ -344,4 +417,5 @@ class DeepClaude:
             }
         except Exception as e:
             logger.error(f"获取 Claude 响应时发生错误: {e}")
+            # 直接抛出异常，不再继续处理
             raise e
