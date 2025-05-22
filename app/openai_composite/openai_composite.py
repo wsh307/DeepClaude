@@ -173,8 +173,9 @@ class OpenAICompatibleComposite:
                 # 构造 OpenAI 的输入消息
                 openai_messages = messages.copy()
                 combined_content = f"""
-                Here's my another model's reasoning process:\n{reasoning}\n\n
-                Based on this reasoning, provide your response directly to me:"""
+                ******The above is user information*****
+The following is the reasoning process of another model:****\n{reasoning}\n\n ****
+Based on this reasoning, combined with your knowledge, when the current reasoning conflicts with your knowledge, you are more confident that you can adopt your own knowledge, which is completely acceptable. Please provide the user with a complete answer directly. You do not need to repeat the request or make your own reasoning. Please be sure to reply completely:"""
 
                 # 检查过滤后的消息列表是否为空
                 if not openai_messages:

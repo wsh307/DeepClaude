@@ -178,8 +178,9 @@ class DeepClaude:
                 # 构造 Claude 的输入消息
                 claude_messages = messages.copy()
                 combined_content = f"""
-                Here's my another model's reasoning process:\n{reasoning}\n\n
-                Based on this reasoning, provide your response directly to me:"""
+                ******The above is user information*****
+The following is the reasoning process of another model:****\n{reasoning}\n\n ****
+Based on this reasoning, combined with your knowledge, when the current reasoning conflicts with your knowledge, you are more confident that you can adopt your own knowledge, which is completely acceptable. Please provide the user with a complete answer directly. You do not need to repeat the request or make your own reasoning. Please be sure to reply completely:"""
 
                 # 提取 system message 并同时过滤掉 system messages
                 system_content = ""
@@ -337,8 +338,9 @@ class DeepClaude:
         claude_messages = messages.copy()
 
         combined_content = f"""
-            Here's my another model's reasoning process:\n{reasoning}\n\n
-            Based on this reasoning, provide your response directly to me:"""
+            ******The above is user information*****
+The following is the reasoning process of another model:****\n{reasoning}\n\n ****
+Based on this reasoning, combined with your knowledge, when the current reasoning conflicts with your knowledge, you are more confident that you can adopt your own knowledge, which is completely acceptable. Please provide the user with a complete answer directly. You do not need to repeat the request or make your own reasoning. Please be sure to reply completely:"""
 
         # 提取 system message 并同时从原始 messages 中过滤掉 system messages
         system_content = ""

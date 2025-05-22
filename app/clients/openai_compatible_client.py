@@ -16,6 +16,22 @@ class OpenAICompatibleClient(BaseClient):
     用于处理符合 OpenAI API 格式的服务,如 Gemini 等
     """
 
+    # 模型特定配置
+    MODEL_CONFIGS = {
+        "gemini-2.5-pro-preview-03-25": {
+            "enable_thinking": {
+                "include_thoughts": True,
+                "thinking_budget": 0
+            }
+        },
+        "gemini-2.5-pro-preview-05-06": {
+            "enable_thinking": {
+                "include_thoughts": True,
+                "thinking_budget": 0
+            }
+        }
+    }
+
     def __init__(
         self,
         api_key: str,
@@ -79,6 +95,10 @@ class OpenAICompatibleClient(BaseClient):
             "stream": False,
         }
 
+        # 使用模型配置
+        if model in self.MODEL_CONFIGS:
+            data.update(self.MODEL_CONFIGS[model])
+
         try:
             response_chunks = []
             async for chunk in self._make_request(headers, data):
@@ -115,6 +135,10 @@ class OpenAICompatibleClient(BaseClient):
             "messages": processed_messages,
             "stream": True,
         }
+
+        # 使用模型配置
+        if model in self.MODEL_CONFIGS:
+            data.update(self.MODEL_CONFIGS[model])
 
         buffer = ""
         try:
