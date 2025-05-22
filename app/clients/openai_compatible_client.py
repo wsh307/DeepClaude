@@ -159,14 +159,26 @@ class OpenAICompatibleClient(BaseClient):
                         json_str = line[6:].strip()
                         try:
                             response = json.loads(json_str)
+                            logger.debug(f"收到响应数据: {json.dumps(response, ensure_ascii=False)}")
+                            
                             if (
                                 "choices" in response
                                 and len(response["choices"]) > 0
-                                and "delta" in response["choices"][0]
                             ):
-                                delta = response["choices"][0]["delta"]
-                                if "content" in delta:
-                                    yield "assistant", delta["content"]
+                                choice = response["choices"][0]
+                                # 检查是否是结束标记
+                                if "finish_reason" in choice and choice["finish_reason"] == "stop":
+                                    logger.debug("检测到结束标记: finish_reason=stop")
+                                    yield "assistant", {"finish_reason": "stop"}
+                                    return
+                                
+                                # 处理正常内容
+                                if "delta" in choice and "content" in choice["delta"]:
+                                    content = choice["delta"]["content"]
+                                    logger.debug(f"收到内容: {content}")
+                                    yield "assistant", content
+                                else:
+                                    logger.debug(f"收到不包含内容的响应: {json.dumps(choice, ensure_ascii=False)}")
                         except json.JSONDecodeError as e:
                             logger.error(f"JSON解析错误: {str(e)}, 原始数据: {json_str}")
                             continue

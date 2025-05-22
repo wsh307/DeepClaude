@@ -41,6 +41,8 @@
 <summary><strong>更新日志：</strong></summary> 
 <div>
 
+2025-05-22.3: 优化 openai 兼容格式返回结束标志，改善近期 deepgeminipro 中断回复的问题。
+
 2025-05-22.2: 优化组合模型之间的衔接 Prompt，提高不同模型本身的能力表达。
 
 2025-05-22.1: 支持可关闭 gemini 2.5 pro 的思考，节省 tokens 消耗。

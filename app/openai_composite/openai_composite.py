@@ -197,6 +197,28 @@ Based on this reasoning, combined with your knowledge, when the current reasonin
                     messages=openai_messages,
                     model=target_model,
                 ):
+                    # 检查是否是结束标记
+                    if isinstance(content, dict) and content.get("finish_reason") == "stop":
+                        # 发送结束响应
+                        end_response = {
+                            "id": chat_id,
+                            "object": "chat.completion.chunk",
+                            "created": created_time,
+                            "model": target_model,
+                            "choices": [
+                                {
+                                    "delta": {},
+                                    "finish_reason": "stop",
+                                    "index": 0
+                                }
+                            ]
+                        }
+                        await output_queue.put(
+                            f"data: {json.dumps(end_response)}\n\n".encode("utf-8")
+                        )
+                        break
+                    
+                    # 正常内容响应
                     response = {
                         "id": chat_id,
                         "object": "chat.completion.chunk",
