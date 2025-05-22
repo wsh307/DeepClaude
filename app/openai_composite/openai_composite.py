@@ -175,7 +175,8 @@ class OpenAICompatibleComposite:
                 combined_content = f"""
                 ******The above is user information*****
 The following is the reasoning process of another model:****\n{reasoning}\n\n ****
-Based on this reasoning, combined with your knowledge, when the current reasoning conflicts with your knowledge, you are more confident that you can adopt your own knowledge, which is completely acceptable. Please provide the user with a complete answer directly. You do not need to repeat the request or make your own reasoning. Please be sure to reply completely:"""
+Based on this reasoning, combined with your knowledge, when the current reasoning conflicts with your knowledge, you are more confident that you can adopt your own knowledge, which is completely acceptable. Please provide the user with a complete answer directly. 
+***Notice, Here is your settings: SELF_TALK: off REASONING: off THINKING: off PLANNING: off THINKING_BUDGET: < 100 tokens ***:"""
 
                 # 检查过滤后的消息列表是否为空
                 if not openai_messages:

@@ -18,13 +18,7 @@ class OpenAICompatibleClient(BaseClient):
 
     # 模型特定配置
     MODEL_CONFIGS = {
-        "gemini-2.5-pro-preview-03-25": {
-            "enable_thinking": {
-                "include_thoughts": True,
-                "thinking_budget": 0
-            }
-        },
-        "gemini-2.5-pro-preview-05-06": {
+        "gemini-2.5-flash-preview-04-17": {
             "enable_thinking": {
                 "include_thoughts": True,
                 "thinking_budget": 0
