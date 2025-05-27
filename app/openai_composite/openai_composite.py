@@ -200,6 +200,7 @@ Based on this reasoning, combined with your knowledge, when the current reasonin
                 ):
                     # 检查是否是结束标记
                     if isinstance(content, dict) and content.get("finish_reason") == "stop":
+                        logger.debug("收到 finish_reason=stop，准备发送结束响应")
                         # 发送结束响应
                         end_response = {
                             "id": chat_id,
@@ -217,6 +218,7 @@ Based on this reasoning, combined with your knowledge, when the current reasonin
                         await output_queue.put(
                             f"data: {json.dumps(end_response)}\n\n".encode("utf-8")
                         )
+                        logger.debug("结束响应已发送到队列")
                         break
                     
                     # 正常内容响应
@@ -288,10 +290,13 @@ Based on this reasoning, combined with your knowledge, when the current reasonin
             item = await output_queue.get()
             if item is None:
                 finished_tasks += 1
+                logger.debug(f"任务完成计数: {finished_tasks}/2")
                 continue
+            logger.debug(f"主循环输出数据: {item.decode('utf-8')[:100] if len(item) > 100 else item.decode('utf-8')}")
             yield item
 
         # 发送结束标记
+        logger.debug("所有任务完成，发送结束标记")
         yield b"data: [DONE]\n\n"
 
     async def chat_completions_without_stream(

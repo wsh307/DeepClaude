@@ -16,15 +16,15 @@ class OpenAICompatibleClient(BaseClient):
     用于处理符合 OpenAI API 格式的服务,如 Gemini 等
     """
 
-    # 模型特定配置
-    MODEL_CONFIGS = {
-        "gemini-2.5-flash-preview-04-17": {
-            "enable_thinking": {
-                "include_thoughts": True,
-                "thinking_budget": 0
-            }
-        }
-    }
+    # # 模型特定配置
+    # MODEL_CONFIGS = {
+    #     "gemini-2.5-flash-preview-04-17": {
+    #         "enable_thinking": {
+    #             "include_thoughts": True,
+    #             "thinking_budget": 0
+    #         }
+    #     }
+    # }
 
     def __init__(
         self,
@@ -130,9 +130,9 @@ class OpenAICompatibleClient(BaseClient):
             "stream": True,
         }
 
-        # 使用模型配置
-        if model in self.MODEL_CONFIGS:
-            data.update(self.MODEL_CONFIGS[model])
+        # # 使用模型配置
+        # if model in self.MODEL_CONFIGS:
+        #     data.update(self.MODEL_CONFIGS[model])
 
         buffer = ""
         try:
@@ -160,18 +160,22 @@ class OpenAICompatibleClient(BaseClient):
                                 and len(response["choices"]) > 0
                             ):
                                 choice = response["choices"][0]
+                                
+                                # 先处理可能的内容，再检查结束标记
+                                if "delta" in choice and "content" in choice["delta"]:
+                                    content = choice["delta"]["content"]
+                                    if content:  # 只输出非空内容
+                                        logger.debug(f"收到内容: {content}")
+                                        yield "assistant", content
+                                
                                 # 检查是否是结束标记
                                 if "finish_reason" in choice and choice["finish_reason"] == "stop":
                                     logger.debug("检测到结束标记: finish_reason=stop")
                                     yield "assistant", {"finish_reason": "stop"}
                                     return
                                 
-                                # 处理正常内容
-                                if "delta" in choice and "content" in choice["delta"]:
-                                    content = choice["delta"]["content"]
-                                    logger.debug(f"收到内容: {content}")
-                                    yield "assistant", content
-                                else:
+                                # 记录其他类型的响应
+                                if "delta" not in choice or "content" not in choice["delta"]:
                                     logger.debug(f"收到不包含内容的响应: {json.dumps(choice, ensure_ascii=False)}")
                         except json.JSONDecodeError as e:
                             logger.error(f"JSON解析错误: {str(e)}, 原始数据: {json_str}")

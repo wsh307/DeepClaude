@@ -41,6 +41,8 @@
 <summary><strong>更新日志：</strong></summary> 
 <div>
 
+2025-05-27.1: 适配 Gemini API 流式响应上的结束标记处理顺序问题。
+
 2025-05-22.3: 优化 openai 兼容格式返回结束标志，改善近期 deepgeminipro 中断回复的问题。
 
 2025-05-22.2: 优化组合模型之间的衔接 Prompt，提高不同模型本身的能力表达。
