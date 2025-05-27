@@ -21,12 +21,21 @@ let configData = {
 // 模态框和选项元素
 const addModelModal = new bootstrap.Modal(document.getElementById('add-model-modal'));
 const confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirm-delete-modal'));
+const importConfigModal = new bootstrap.Modal(document.getElementById('import-config-modal'));
 const deleteModelNameSpan = document.getElementById('delete-model-name');
 const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 const addModelForm = document.getElementById('add-model-form');
 const addModelFields = document.getElementById('add-model-fields');
 const confirmAddModelBtn = document.getElementById('confirm-add-model');
 const addModelTitle = document.getElementById('add-model-title');
+
+// 导入导出相关元素
+const exportConfigBtn = document.getElementById('export-config-btn');
+const importConfigBtn = document.getElementById('import-config-btn');
+const configFileInput = document.getElementById('config-file-input');
+const configPreview = document.getElementById('config-preview');
+const configPreviewContent = document.getElementById('config-preview-content');
+const confirmImportBtn = document.getElementById('confirm-import-btn');
 
 // 模型容器
 const reasonerModelsContainer = document.getElementById('reasoner-models-container');
@@ -53,6 +62,9 @@ const addOriginBtn = document.getElementById('add-origin-btn');
 const logLevelSelect = document.getElementById('log-level');
 const systemApiKeyInput = document.getElementById('system-api-key');
 
+// 存储选择的配置文件内容
+let selectedConfigData = null;
+
 /**
  * 初始化配置管理
  */
@@ -66,6 +78,14 @@ function initConfig() {
     saveAllBtn.addEventListener('click', saveAllConfigurations);
     saveProxyBtn.addEventListener('click', saveProxySettings);
     saveSystemBtn.addEventListener('click', saveSystemSettings);
+    
+    // 绑定导入导出按钮事件
+    exportConfigBtn.addEventListener('click', exportConfiguration);
+    importConfigBtn.addEventListener('click', () => importConfigModal.show());
+    
+    // 绑定文件选择和导入确认事件
+    configFileInput.addEventListener('change', handleConfigFileSelect);
+    confirmImportBtn.addEventListener('click', handleConfigImport);
     
     // 绑定添加源按钮事件
     addOriginBtn.addEventListener('click', addAllowOriginInput);
@@ -714,6 +734,186 @@ function showToast(message, type) {
     toastElement.addEventListener('hidden.bs.toast', () => {
         toastElement.remove();
     });
+}
+
+/**
+ * 导出配置文件
+ */
+async function exportConfiguration() {
+    try {
+        showToast('正在导出配置...', 'info');
+        
+        const apiKey = Auth.getCurrentApiKey();
+        const response = await fetch(`${Auth.API_BASE_URL}/v1/config/export`, {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('导出配置失败');
+        }
+        
+        const configData = await response.json();
+        
+        // 创建下载链接
+        const dataStr = JSON.stringify(configData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        
+        // 生成文件名
+        const now = new Date();
+        const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const filename = `deepclaude_config_${timestamp}.json`;
+        
+        // 创建下载链接并触发下载
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // 清理URL
+        URL.revokeObjectURL(url);
+        
+        showToast('配置导出成功', 'success');
+    } catch (error) {
+        console.error('导出配置时发生错误:', error);
+        showToast('导出配置失败: ' + error.message, 'danger');
+    }
+}
+
+/**
+ * 处理配置文件选择
+ * @param {Event} event - 文件选择事件
+ */
+function handleConfigFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) {
+        configPreview.classList.add('d-none');
+        confirmImportBtn.disabled = true;
+        selectedConfigData = null;
+        return;
+    }
+    
+    // 检查文件类型
+    if (!file.name.endsWith('.json')) {
+        showToast('请选择JSON格式的配置文件', 'warning');
+        configFileInput.value = '';
+        configPreview.classList.add('d-none');
+        confirmImportBtn.disabled = true;
+        selectedConfigData = null;
+        return;
+    }
+    
+    // 读取文件内容
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const configContent = JSON.parse(e.target.result);
+            selectedConfigData = configContent;
+            
+            // 显示配置预览
+            displayConfigPreview(configContent);
+            configPreview.classList.remove('d-none');
+            confirmImportBtn.disabled = false;
+            
+        } catch (error) {
+            showToast('配置文件格式不正确，请选择有效的JSON文件', 'danger');
+            configFileInput.value = '';
+            configPreview.classList.add('d-none');
+            confirmImportBtn.disabled = true;
+            selectedConfigData = null;
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+/**
+ * 显示配置预览
+ * @param {Object} config - 配置数据
+ */
+function displayConfigPreview(config) {
+    const preview = document.createElement('div');
+    preview.className = 'small';
+    
+    // 统计配置信息
+    const reasonerCount = Object.keys(config.reasoner_models || {}).length;
+    const targetCount = Object.keys(config.target_models || {}).length;
+    const compositeCount = Object.keys(config.composite_models || {}).length;
+    
+    // 检查是否有导出元数据
+    const exportTime = config._export_metadata?.export_time || '未知';
+    const exportSource = config._export_metadata?.source || '未知';
+    
+    preview.innerHTML = `
+        <div class="mb-2">
+            <strong>配置统计：</strong>
+        </div>
+        <ul class="mb-2">
+            <li>推理模型：${reasonerCount} 个</li>
+            <li>目标模型：${targetCount} 个</li>
+            <li>组合模型：${compositeCount} 个</li>
+        </ul>
+        <div class="mb-2">
+            <strong>导出信息：</strong>
+        </div>
+        <ul class="mb-0">
+            <li>导出时间：${exportTime}</li>
+            <li>来源：${exportSource}</li>
+        </ul>
+    `;
+    
+    configPreviewContent.innerHTML = '';
+    configPreviewContent.appendChild(preview);
+}
+
+/**
+ * 处理配置导入
+ */
+async function handleConfigImport() {
+    if (!selectedConfigData) {
+        showToast('请先选择配置文件', 'warning');
+        return;
+    }
+    
+    try {
+        showToast('正在导入配置...', 'info');
+        
+        const apiKey = Auth.getCurrentApiKey();
+        const response = await fetch(`${Auth.API_BASE_URL}/v1/config/import`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(selectedConfigData)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || '导入配置失败');
+        }
+        
+        // 关闭模态框
+        importConfigModal.hide();
+        
+        // 清理状态
+        configFileInput.value = '';
+        configPreview.classList.add('d-none');
+        confirmImportBtn.disabled = true;
+        selectedConfigData = null;
+        
+        // 重新加载配置数据
+        await loadConfigData();
+        
+        showToast('配置导入成功', 'success');
+    } catch (error) {
+        console.error('导入配置时发生错误:', error);
+        showToast('导入配置失败: ' + error.message, 'danger');
+    }
 }
 
 // 导出函数和变量

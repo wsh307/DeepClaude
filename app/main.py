@@ -219,3 +219,49 @@ async def update_config(request: Request):
     except Exception as e:
         logger.error(f"更新配置时发生错误: {e}")
         return {"error": str(e)}
+
+@app.get("/v1/config/export", dependencies=[Depends(verify_api_key)])
+async def export_config():
+    """导出模型配置
+    
+    返回当前完整的模型配置数据，可用于备份和迁移
+    """
+    try:
+        # 使用 ModelManager 导出配置
+        config = model_manager.export_config()
+        
+        # 设置响应头，建议浏览器下载文件
+        from fastapi.responses import JSONResponse
+        from datetime import datetime
+        
+        filename = f"deepclaude_config_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        headers = {
+            "Content-Disposition": f"attachment; filename={filename}",
+            "Content-Type": "application/json"
+        }
+        
+        return JSONResponse(content=config, headers=headers)
+    except Exception as e:
+        logger.error(f"导出配置时发生错误: {e}")
+        return {"error": str(e)}
+
+@app.post("/v1/config/import", dependencies=[Depends(verify_api_key)])
+async def import_config(request: Request):
+    """导入模型配置
+    
+    接收并验证配置文件，然后导入到系统中
+    """
+    try:
+        # 获取请求体
+        body = await request.json()
+        
+        # 使用 ModelManager 导入配置
+        model_manager.import_config(body)
+        
+        return {"message": "配置导入成功"}
+    except ValueError as e:
+        logger.error(f"配置验证失败: {e}")
+        return {"error": str(e)}
+    except Exception as e:
+        logger.error(f"导入配置时发生错误: {e}")
+        return {"error": str(e)}

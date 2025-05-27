@@ -64,6 +64,8 @@
                         </li>
                     </ul>
                     <div class="d-flex">
+                        <button id="export-config-btn" class="btn btn-outline-light me-2"><i class="bi bi-download me-1"></i> 导出配置</button>
+                        <button id="import-config-btn" class="btn btn-outline-light me-2"><i class="bi bi-upload me-1"></i> 导入配置</button>
                         <button id="save-all-btn" class="btn btn-success me-2"><i class="bi bi-save me-1"></i> 保存所有配置</button>
                         <button id="logout-btn" class="btn btn-outline-light"><i class="bi bi-box-arrow-right me-1"></i> 退出</button>
                     </div>
@@ -460,6 +462,45 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                     <button type="button" class="btn btn-danger" id="confirm-delete-btn">删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入配置对话框 -->
+    <div class="modal fade" id="import-config-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-upload me-2"></i>导入配置文件</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        请选择之前导出的配置文件（JSON格式）。导入后将覆盖当前所有配置。
+                    </div>
+                    <div class="mb-3">
+                        <label for="config-file-input" class="form-label">选择配置文件</label>
+                        <input type="file" class="form-control" id="config-file-input" accept=".json" />
+                        <div class="form-text">支持 .json 格式的配置文件</div>
+                    </div>
+                    <div id="config-preview" class="d-none">
+                        <label class="form-label">配置预览</label>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div id="config-preview-content" style="max-height: 200px; overflow-y: auto;">
+                                    <!-- 配置预览内容 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="confirm-import-btn" disabled>
+                        <i class="bi bi-upload me-1"></i>导入配置
+                    </button>
                 </div>
             </div>
         </div>
