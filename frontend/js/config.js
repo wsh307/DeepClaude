@@ -14,7 +14,9 @@ let configData = {
     system: {
         allow_origins: ["*"],
         log_level: "INFO",
-        api_key: "123456"
+        api_key: "123456",
+        save_deepseek_tokens: false,
+        save_deepseek_tokens_max_tokens: 5
     }
 };
 
@@ -137,8 +139,18 @@ async function loadConfigData() {
             configData.system = {
                 allow_origins: ["*"],
                 log_level: "INFO",
-                api_key: "123456"
+                api_key: "123456",
+                save_deepseek_tokens: false,
+                save_deepseek_tokens_max_tokens: 5
             };
+        }
+        
+        // 确保系统设置中包含所有必需的字段
+        if (!configData.system.hasOwnProperty('save_deepseek_tokens')) {
+            configData.system.save_deepseek_tokens = false;
+        }
+        if (!configData.system.hasOwnProperty('save_deepseek_tokens_max_tokens')) {
+            configData.system.save_deepseek_tokens_max_tokens = 5;
         }
         
         // 渲染模型
@@ -347,7 +359,7 @@ function renderProxySettings() {
  * 渲染系统设置
  */
 function renderSystemSettings() {
-    const { allow_origins, log_level, api_key } = configData.system;
+    const { allow_origins, log_level, api_key, save_deepseek_tokens, save_deepseek_tokens_max_tokens } = configData.system;
     
     // 清空允许的源容器
     allowOriginsContainer.innerHTML = '';
@@ -366,6 +378,31 @@ function renderSystemSettings() {
     
     // 设置 API Key
     systemApiKeyInput.value = api_key || '123456';
+    
+    // 设置 DeepSeek tokens 相关设置
+    const saveDeepseekTokensSwitch = document.getElementById('save-deepseek-tokens');
+    const deepseekTokensMaxInput = document.getElementById('deepseek-tokens-max');
+    const deepseekTokensMaxContainer = document.getElementById('deepseek-tokens-max-container');
+    
+    if (saveDeepseekTokensSwitch) {
+        saveDeepseekTokensSwitch.checked = save_deepseek_tokens || false;
+        
+        // 根据开关状态显示/隐藏最大限制设置
+        if (deepseekTokensMaxContainer) {
+            deepseekTokensMaxContainer.style.display = saveDeepseekTokensSwitch.checked ? 'block' : 'none';
+        }
+        
+        // 绑定开关变化事件
+        saveDeepseekTokensSwitch.addEventListener('change', function() {
+            if (deepseekTokensMaxContainer) {
+                deepseekTokensMaxContainer.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    }
+    
+    if (deepseekTokensMaxInput) {
+        deepseekTokensMaxInput.value = save_deepseek_tokens_max_tokens || 5;
+    }
 }
 
 /**
@@ -395,7 +432,8 @@ function saveReasonerModel(name, form) {
         api_base_url: form.querySelector('.api-base-url').value,
         api_request_address: form.querySelector('.api-request-address').value,
         is_origin_reasoning: form.querySelector('.is-origin-reasoning').checked,
-        is_valid: form.querySelector('.is-valid').checked
+        is_valid: form.querySelector('.is-valid').checked,
+        proxy_open: form.querySelector('.is-proxy-open').checked
     };
     
     configData.reasoner_models[name] = modelConfig;
@@ -416,7 +454,8 @@ function saveTargetModel(name, form) {
         api_base_url: form.querySelector('.api-base-url').value,
         api_request_address: form.querySelector('.api-request-address').value,
         model_format: form.querySelector('.model-format').value,
-        is_valid: form.querySelector('.is-valid').checked
+        is_valid: form.querySelector('.is-valid').checked,
+        proxy_open: form.querySelector('.is-proxy-open').checked
     };
     
     configData.target_models[name] = modelConfig;
@@ -474,10 +513,36 @@ function saveSystemSettings() {
         // 获取 API Key
         const apiKey = systemApiKeyInput.value.trim() || '123456';
         
+        // 获取 DeepSeek tokens 相关设置
+        const saveDeepseekTokensSwitch = document.getElementById('save-deepseek-tokens');
+        const deepseekTokensMaxInput = document.getElementById('deepseek-tokens-max');
+        
+        // 添加详细的调试信息
+        console.log('调试信息 - DOM 元素状态:', {
+            saveDeepseekTokensSwitch: saveDeepseekTokensSwitch,
+            saveDeepseekTokensSwitchExists: !!saveDeepseekTokensSwitch,
+            saveDeepseekTokensSwitchChecked: saveDeepseekTokensSwitch ? saveDeepseekTokensSwitch.checked : 'element not found',
+            deepseekTokensMaxInput: deepseekTokensMaxInput,
+            deepseekTokensMaxInputExists: !!deepseekTokensMaxInput,
+            deepseekTokensMaxInputValue: deepseekTokensMaxInput ? deepseekTokensMaxInput.value : 'element not found'
+        });
+        
+        const saveDeepseekTokens = saveDeepseekTokensSwitch ? saveDeepseekTokensSwitch.checked : false;
+        const deepseekTokensMax = deepseekTokensMaxInput ? parseInt(deepseekTokensMaxInput.value) || 5 : 5;
+        
+        console.log('保存系统设置 - DeepSeek tokens 设置:', {
+            saveDeepseekTokens,
+            deepseekTokensMax
+        });
+        
         // 更新配置数据
         configData.system.allow_origins = origins;
         configData.system.log_level = logLevel;
         configData.system.api_key = apiKey;
+        configData.system.save_deepseek_tokens = saveDeepseekTokens;
+        configData.system.save_deepseek_tokens_max_tokens = deepseekTokensMax;
+        
+        console.log('更新后的配置数据 - 系统设置:', configData.system);
         
         saveAllConfigurations();
     } catch (error) {
@@ -491,21 +556,64 @@ function saveSystemSettings() {
  */
 async function saveAllConfigurations() {
     try {
+        // 在保存之前，先从界面读取最新的设置
+        // 获取代理设置
+        configData.proxy.proxy_open = proxyOpenSwitch.checked;
+        configData.proxy.proxy_address = proxyAddressInput.value.trim();
+        
+        // 获取系统设置
+        const originInputs = document.querySelectorAll('.allow-origin');
+        const origins = Array.from(originInputs).map(input => input.value.trim()).filter(value => value);
+        const logLevel = logLevelSelect.value;
+        const apiKey = systemApiKeyInput.value.trim() || '123456';
+        
+        // 获取 DeepSeek tokens 相关设置
+        const saveDeepseekTokensSwitch = document.getElementById('save-deepseek-tokens');
+        const deepseekTokensMaxInput = document.getElementById('deepseek-tokens-max');
+        
+        console.log('saveAllConfigurations - 调试信息 - DOM 元素状态:', {
+            saveDeepseekTokensSwitch: saveDeepseekTokensSwitch,
+            saveDeepseekTokensSwitchExists: !!saveDeepseekTokensSwitch,
+            saveDeepseekTokensSwitchChecked: saveDeepseekTokensSwitch ? saveDeepseekTokensSwitch.checked : 'element not found',
+            deepseekTokensMaxInput: deepseekTokensMaxInput,
+            deepseekTokensMaxInputExists: !!deepseekTokensMaxInput,
+            deepseekTokensMaxInputValue: deepseekTokensMaxInput ? deepseekTokensMaxInput.value : 'element not found'
+        });
+        
+        const saveDeepseekTokens = saveDeepseekTokensSwitch ? saveDeepseekTokensSwitch.checked : false;
+        const deepseekTokensMax = deepseekTokensMaxInput ? parseInt(deepseekTokensMaxInput.value) || 5 : 5;
+        
+        // 更新系统配置
+        configData.system.allow_origins = origins;
+        configData.system.log_level = logLevel;
+        configData.system.api_key = apiKey;
+        configData.system.save_deepseek_tokens = saveDeepseekTokens;
+        configData.system.save_deepseek_tokens_max_tokens = deepseekTokensMax;
+        
+        console.log('准备保存的完整配置数据:', JSON.stringify(configData, null, 2));
+        
         showToast('正在保存配置...', 'info');
         
-        const apiKey = Auth.getCurrentApiKey();
+        const authApiKey = Auth.getCurrentApiKey();
         const response = await fetch(`${Auth.API_BASE_URL}/v1/config`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${apiKey}`,
+                'Authorization': `Bearer ${authApiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(configData)
         });
         
+        console.log('保存配置请求响应状态:', response.status);
+        
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('保存配置失败，响应内容:', errorText);
             throw new Error('保存配置失败');
         }
+        
+        const responseData = await response.json();
+        console.log('保存配置成功，响应数据:', responseData);
         
         showToast('所有配置已保存', 'success');
     } catch (error) {

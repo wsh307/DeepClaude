@@ -129,6 +129,10 @@ class ModelManager:
         # 默认设置为True, 和默认行为保持一致（只要全局开始proxy_open, 则模型默认开启proxy_open）
         reasoner_proxy = proxy if reasoner_config.get('proxy_open', True) else None
         target_proxy = proxy if target_config.get('proxy_open', True) else None
+        
+        # 获取系统配置
+        system_config = self.config.get("system", {})
+        
         # 创建模型实例
         if target_config.get("model_format", "") == "anthropic":
             # 创建 DeepClaude 实例
@@ -141,6 +145,7 @@ class ModelManager:
                 is_origin_reasoning=reasoner_config.get("is_origin_reasoning", self.is_origin_reasoning),
                 reasoner_proxy=reasoner_proxy,
                 target_proxy=target_proxy,
+                system_config=system_config,
             )
         else:
             # 创建 OpenAICompatibleComposite 实例
@@ -152,6 +157,7 @@ class ModelManager:
                 is_origin_reasoning=reasoner_config.get("is_origin_reasoning", self.is_origin_reasoning),
                 reasoner_proxy=reasoner_proxy,
                 target_proxy=target_proxy,
+                system_config=system_config,
             )
         
         # 缓存实例

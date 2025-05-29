@@ -23,7 +23,8 @@ class DeepClaude:
         claude_provider: str = "anthropic",
         is_origin_reasoning: bool = True,
         reasoner_proxy: str = None,
-        target_proxy: str = None
+        target_proxy: str = None,
+        system_config: dict = None
     ):
         """初始化 API 客户端
 
@@ -36,8 +37,15 @@ class DeepClaude:
             is_origin_reasoning: 是否使用原始推理
             reasoner_proxy: reasoner模型代理服务器地址
             target_proxy: target模型代理服务器地址
+            system_config: 系统配置，包含 save_deepseek_tokens 等设置
         """
-        self.deepseek_client = DeepSeekClient(deepseek_api_key, deepseek_api_url, proxy=reasoner_proxy)
+        self.system_config = system_config or {}
+        self.deepseek_client = DeepSeekClient(
+            deepseek_api_key, 
+            deepseek_api_url, 
+            proxy=reasoner_proxy,
+            system_config=self.system_config
+        )
         self.claude_client = ClaudeClient(
             claude_api_key, claude_api_url, claude_provider, proxy=target_proxy
         )

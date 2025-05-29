@@ -21,7 +21,8 @@ class OpenAICompatibleComposite:
         openai_api_url: str = "",  # 将由具体实现提供
         is_origin_reasoning: bool = True,
         reasoner_proxy: str = None,
-        target_proxy: str = None
+        target_proxy: str = None,
+        system_config: dict = None
     ):
         """初始化 API 客户端
 
@@ -33,8 +34,15 @@ class OpenAICompatibleComposite:
             is_origin_reasoning: 是否使用原始推理过程
             reasoner_proxy: reasoner模型代理服务器地址
             target_proxy: target模型代理服务器地址
+            system_config: 系统配置，包含 save_deepseek_tokens 等设置
         """
-        self.deepseek_client = DeepSeekClient(deepseek_api_key, deepseek_api_url, proxy=reasoner_proxy)
+        self.system_config = system_config or {}
+        self.deepseek_client = DeepSeekClient(
+            deepseek_api_key, 
+            deepseek_api_url, 
+            proxy=reasoner_proxy,
+            system_config=self.system_config
+        )
         self.openai_client = OpenAICompatibleClient(openai_api_key, openai_api_url, proxy=target_proxy)
         self.is_origin_reasoning = is_origin_reasoning
 

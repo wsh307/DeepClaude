@@ -24,7 +24,7 @@
                             <div class="mb-3">
                                 <label for="api-key" class="form-label">API Key</label>
                                 <input type="password" class="form-control" id="api-key" placeholder="请输入您的 API Key">
-                                <div class="form-text">默认 api key 为 123456，远程部署请在登录后在“系统设置”内尽快修改</div>
+                                <div class="form-text">默认 api key 为 123456，远程部署请在登录后在"系统设置"内尽快修改</div>
                             </div>
                             <div id="auth-error" class="alert alert-danger d-none" role="alert">
                                 API Key 无效，请重新输入
@@ -93,7 +93,7 @@
                             <h5 class="mb-0">无需自己配置，可直接购买 API</h5>
                         </div>
                         <div class="card-body">
-                            <p>支持最新 Claude 3.7 Sonnet 推理模型、DeepClaude、DeepGemini（目前社区反馈最好）、ChatGPT 系列模型等，支持知识库使用。</p>
+                            <p>支持最新 Claude 4 模型、DeepClaude、DeepGemini（目前社区反馈最好）、ChatGPT 系列模型等，支持知识库使用。</p>
                             <a href="https://erlich.fun/deepclaude-pricing" class="btn btn-primary">
                                 <i class="bi bi-cart me-1"></i> 立即购买
                             </a>
@@ -113,7 +113,7 @@
                     </div>
                     <p class="text-muted mb-3">推理模型负责处理复杂的逻辑推理任务，如DeepSeek R1等模型。</p>
                     <!-- 推荐卡片 -->
-                    <div class="card mb-4 border-primary border-opacity-25">
+                    <!-- <div class="card mb-4 border-primary border-opacity-25">
                         <div class="card-header bg-primary text-white">
                             <h5 class="mb-0 fs-5"><i class="bi bi-star me-1"></i> 推荐采用火山云引擎的满血 deepseek r1</h5>
                         </div>
@@ -123,7 +123,7 @@
                                 <i class="bi bi-person-plus me-1"></i> 立即注册
                             </a>
                         </div>
-                    </div>
+                    </div> -->
                     <div id="reasoner-models-container" class="row">
                         <!-- 推理模型卡片将在这里动态生成 -->
                     </div>
@@ -133,7 +133,7 @@
                             <h5 class="mb-0">无需自己配置，可直接购买 API</h5>
                         </div>
                         <div class="card-body">
-                            <p>支持最新 Claude 3.7 Sonnet 推理模型、DeepClaude、DeepGemini（目前社区反馈最好）、ChatGPT 系列模型等，支持知识库使用。</p>
+                            <p>支持最新 Claude 4  推理模型、DeepClaude、DeepGemini（目前社区反馈最好）、ChatGPT 系列模型等，支持知识库使用。</p>
                             <a href="https://erlich.fun/deepclaude-pricing" class="btn btn-primary">
                                 <i class="bi bi-cart me-1"></i> 立即购买
                             </a>
@@ -151,7 +151,7 @@
                             <i class="bi bi-plus-circle"></i> 添加目标模型
                         </button>
                     </div>
-                    <p class="text-muted mb-3">目标模型是最终输出结果的模型，如Claude 3.7 Sonnet或Gemini 2.0 Pro等。</p>
+                    <p class="text-muted mb-3">目标模型是最终输出结果的模型，如Claude Sonnet 4 或Gemini 2.5 Pro等。</p>
                     <!-- 推荐卡片 -->
                     <!-- <div class="card mb-4">
                         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
@@ -242,11 +242,23 @@
                                     <label class="form-label">API Key</label>
                                     <div class="input-group">
                                         <input type="text" class="form-control" id="system-api-key" placeholder="设置 API Key">
-                                        <button class="btn btn-outline-secondary" type="button" id="generate-api-key-btn">
+                                        <!-- <button class="btn btn-outline-secondary" type="button" id="generate-api-key-btn">
                                             <i class="bi bi-key"></i> 生成随机密钥
-                                        </button>
+                                        </button> -->
                                     </div>
                                     <div class="form-text mt-2">默认值为 123456，当你在 ChatBox 等聊天软件内使用时，填写的 api key 就是这个。如部署在云端，为保证安全请尽快修改。</div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="save-deepseek-tokens">
+                                        <label class="form-check-label" for="save-deepseek-tokens">节省 DeepSeek Tokens</label>
+                                    </div>
+                                    <div class="form-text">开启后将在使用原生推理模型时大幅节省输出 tokens，大幅降低输出成本。目前仅在火山引擎托管的 DeepSeek R1 上测试生效，欢迎补充。</div>
+                                </div>
+                                <div class="mb-3" id="deepseek-tokens-max-container">
+                                    <label class="form-label">DeepSeek Tokens 最大限制</label>
+                                    <input type="number" class="form-control" id="deepseek-tokens-max" min="1" max="1000" placeholder="5">
+                                    <div class="form-text">设置节省 DeepSeek R1 输出 tokens 最大数量限制。由于我们只采用 DeepSeek R1 的推理部分，在支持输出结果的 max_tokens 参数的模型上，这个数值越小越好，为了保证更稳定的运行，推荐设置 5 即可。</div>
                                 </div>
                                 <button type="button" class="btn btn-primary" id="save-system-btn">保存系统设置</button>
                             </form>
@@ -258,7 +270,7 @@
                             <h5 class="mb-0">无需自己配置，可直接购买 API</h5>
                         </div>
                         <div class="card-body">
-                            <p>支持最新 Claude 3.7 Sonnet 推理模型、DeepClaude、DeepGemini（目前社区反馈最好）、ChatGPT 系列模型等，支持知识库使用。</p>
+                            <p>支持最新 Claude 4 推理模型、DeepClaude、DeepGemini（目前社区反馈最好）、ChatGPT 系列模型等，支持知识库使用。</p>
                             <a href="https://erlich.fun/deepclaude-pricing" class="btn btn-primary">
                                 <i class="bi bi-cart me-1"></i> 立即购买
                             </a>
@@ -580,7 +592,7 @@
                 <div class="col-lg-6 col-md-12 mb-4 mb-md-0">
                     <h5 class="">DeepClaude 开源项目</h5>
                     <p>
-                        DeepClaude 是一个强大的组合模型使用方案，可以借助 DeepSeek R1 等推理模型强大的推理能力来提高像 Claude 3.7 Sonnet 或 Gemini 2.0 Pro 等模型的能力。你可以借助当前的方案实现几乎任何推理模型+目标模型的配置！
+                        DeepClaude 是一个强大的组合模型使用方案，可以借助 DeepSeek R1 等推理模型强大的推理能力来提高像 Claude Sonnet 4 或 Gemini 2.5 Pro 等模型的能力。你可以借助当前的方案实现几乎任何推理模型+目标模型的配置！
                     </p>
                 </div>
                 <div class="col-lg-6 col-md-12 mb-4 mb-md-0">
