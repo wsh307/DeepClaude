@@ -127,7 +127,7 @@
 
 ## 1. 获得运行所需的 API
 
-1. 获取 DeepSeek API，推荐采用 PPIO（派欧云）最新的 DeepSeek R1 0528，点击链接注册，新用户可以获得 30 元券：https://ppio.cn/user/register?invited_by=TXTPQF
+1. 获取 DeepSeek API，推荐采用 PPIO（派欧云）最新的 DeepSeek R1 0528，点击链接注册，新用户可以获得 15 元免费额度，再邀请人还可以获得 30 元：https://ppio.cn/user/register?invited_by=TXTPQF
 2. 获取 Claude 的 API KEY：https://console.anthropic.com。(也可采用其他中转服务，如 DMXapi、Openrouter 以及其他服务商的 API KEY)
 3. 获取 Gemini 的 API KEY：https://aistudio.google.com/apikey (有免费的额度，日常够用)
 
