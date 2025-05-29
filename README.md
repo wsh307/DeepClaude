@@ -139,6 +139,9 @@
 
 请确保你已经安装了 Docker Desktop（适用于 macOS 和 Windows），或 Docker Engine（适用于 Linux）。
 
+Windows 下载安装地址：https://docs.docker.com/desktop/setup/install/windows-install/
+macOS 下载安装地址：https://docs.docker.com/desktop/setup/install/mac-install/
+
 安装完成后，确保在终端中运行以下命令没有报错：
 
 `docker --version`
