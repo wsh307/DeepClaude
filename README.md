@@ -135,6 +135,8 @@
 
 ## 2. 开始运行（使用 Docker）
 
+** 极其推荐 Zeabur，然后通过 Zeabur 来购买新加坡或日本的服务器是最划算的，只要 2 美金就足够，如果你是新用户，可以点击：https://zeabur.com/referral?referralCode=ErlichLiu 我们一起获得奖励额度 **
+
 ✅ Step 1. 安装 Docker
 
 请确保你已经安装了 Docker Desktop（适用于 macOS 和 Windows），或 Docker Engine（适用于 Linux）。
