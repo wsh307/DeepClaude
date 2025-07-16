@@ -62,7 +62,7 @@ async def root():
 @app.post("/v1/chat/completions", dependencies=[Depends(verify_api_key)])
 async def chat_completions(request: Request):
     """处理聊天完成请求，使用 ModelManager 进行处理
-    
+
     请求体格式应与 OpenAI API 保持一致，包含：
     - messages: 消息列表
     - model: 模型名称（必需）
@@ -106,14 +106,14 @@ async def chat_completions(request: Request):
 
                     # 如果是流式请求，返回流式错误响应
                     if body.get("stream", True):
-                        async def error_stream():
+                        async def error_stream(err_msg):
                             error_response = {
                                 "id": f"chatcmpl-{hex(int(time.time() * 1000))[2:]}",
                                 "object": "chat.completion.chunk",
                                 "created": int(time.time()),
                                 "model": body.get("model", "unknown"),
                                 "error": error_json.get("error", {
-                                    "message": str(e),
+                                    "message": err_msg,
                                     "type": "api_error",
                                     "code": "invalid_request_error"
                                 })
@@ -121,7 +121,7 @@ async def chat_completions(request: Request):
                             yield f"data: {json.dumps(error_response)}\n\n".encode("utf-8")
                             yield b"data: [DONE]\n\n"
                         return StreamingResponse(
-                            error_stream(),
+                            error_stream(str(e)),
                             media_type="text/event-stream"
                         )
                     else:
@@ -133,14 +133,14 @@ async def chat_completions(request: Request):
                     pass
         # 如果是流式请求，返回流式错误响应
         if body.get("stream", True):
-            async def error_stream():
+            async def error_stream(err_msg):
                 error_response = {
                     "id": f"chatcmpl-{hex(int(time.time() * 1000))[2:]}",
                     "object": "chat.completion.chunk",
                     "created": int(time.time()),
                     "model": body.get("model", "unknown"),
                     "error": {
-                        "message": str(e),
+                        "message": err_msg,
                         "type": "api_error",
                         "code": "invalid_request_error"
                     }
@@ -148,7 +148,7 @@ async def chat_completions(request: Request):
                 yield f"data: {json.dumps(error_response)}\n\n".encode("utf-8")
                 yield b"data: [DONE]\n\n"
             return StreamingResponse(
-                error_stream(),
+                error_stream(str(e)),
                 media_type="text/event-stream"
             )
         else:
@@ -160,7 +160,7 @@ async def chat_completions(request: Request):
 @app.get("/v1/models", dependencies=[Depends(verify_api_key)])
 async def list_models():
     """获取可用模型列表
-    
+
     使用 ModelManager 获取从配置文件中读取的模型列表
     返回格式遵循 OpenAI API 标准
     """
@@ -175,7 +175,7 @@ async def list_models():
 @app.get("/config")
 async def config_page():
     """配置页面
-    
+
     返回配置页面的 HTML
     """
     try:
@@ -191,7 +191,7 @@ async def config_page():
 @app.get("/v1/config", dependencies=[Depends(verify_api_key)])
 async def get_config():
     """获取模型配置
-    
+
     返回当前的模型配置数据
     """
     try:
@@ -205,16 +205,16 @@ async def get_config():
 @app.post("/v1/config", dependencies=[Depends(verify_api_key)])
 async def update_config(request: Request):
     """更新模型配置
-    
+
     接收并保存新的模型配置数据
     """
     try:
         # 获取请求体
         body = await request.json()
-        
+
         # 使用 ModelManager 更新配置
         model_manager.update_config(body)
-        
+
         return {"message": "配置已更新"}
     except Exception as e:
         logger.error(f"更新配置时发生错误: {e}")
@@ -223,23 +223,23 @@ async def update_config(request: Request):
 @app.get("/v1/config/export", dependencies=[Depends(verify_api_key)])
 async def export_config():
     """导出模型配置
-    
+
     返回当前完整的模型配置数据，可用于备份和迁移
     """
     try:
         # 使用 ModelManager 导出配置
         config = model_manager.export_config()
-        
+
         # 设置响应头，建议浏览器下载文件
         from fastapi.responses import JSONResponse
         from datetime import datetime
-        
+
         filename = f"deepclaude_config_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         headers = {
             "Content-Disposition": f"attachment; filename={filename}",
             "Content-Type": "application/json"
         }
-        
+
         return JSONResponse(content=config, headers=headers)
     except Exception as e:
         logger.error(f"导出配置时发生错误: {e}")
@@ -248,16 +248,16 @@ async def export_config():
 @app.post("/v1/config/import", dependencies=[Depends(verify_api_key)])
 async def import_config(request: Request):
     """导入模型配置
-    
+
     接收并验证配置文件，然后导入到系统中
     """
     try:
         # 获取请求体
         body = await request.json()
-        
+
         # 使用 ModelManager 导入配置
         model_manager.import_config(body)
-        
+
         return {"message": "配置导入成功"}
     except ValueError as e:
         logger.error(f"配置验证失败: {e}")
